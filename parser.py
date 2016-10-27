@@ -38,13 +38,14 @@ def parsebool(boolean):
 
 # Python type/JSON type/parse
 type_map = [
-    [int, "Number", int, str],
-    [float, "Number", int, str], 
-    [bool, "Boolean", parsebool, encodebool],
-    [str, "String", parsestr, encodestr]
+    ["int", "Number", int, str],
+    ["float", "Number", int, str], 
+    ["bool", "Boolean", parsebool, encodebool],
+    ["str", "String", parsestr, encodestr]
 ]
 
 def parse(string, python_type):
+    
     return string
 
 def encode(string, python_type):
