@@ -1,23 +1,20 @@
 import json
 import exceptions
 
-
-
-def printbool(boolean):
+def encodebool(boolean):
     '''
-    Print a bool with appropriate case
+    Encode a bool with appropriate case
     '''
     if boolean:
         return "true"
     return "false"
 
-def printstr(string):
+def encodestr(string):
     '''
     Escape a string with standard JSON encoding, omitting
     the quotes
     '''
     json.dumps(string)[1:-1]
-
 
 def parsestr(string):
     '''
@@ -37,3 +34,18 @@ def parsebool(boolean):
     raise exceptions.TSVXFileFormatException(
         "Boolean type must be true/false: " + boolean
     )
+
+
+# Python type/JSON type/parse
+type_map = [
+    [int, "Number", int, str],
+    [float, "Number", int, str], 
+    [bool, "Boolean", parsebool, encodebool],
+    [str, "String", parsestr, encodestr]
+]
+
+def parse(string, python_type):
+    return string
+
+def encode(string, python_type):
+    return string

@@ -2,54 +2,55 @@ import datetime
 import sys
 import yaml
 
-from parser import *
-
-# Python type/JSON type/parse
-type_map = [
-    [int, "Number", int, str],
-    [float, "Number", int, str], 
-    [bool, "Boolean", parsebool, printbool],
-    [str, "String", parsestr, printstr]
-]
+import parser
 
 class TSVxLine(object):
     def __init__(self, line_string, parent):
-        self.line_string = line_string[:-1].split('\t')
+        '''
+        Create a line based on string of the line. Strip the
+        newline. Split on tabs. And parse
+        '''
+        split_line = line_string[:-1].split('\t')
+        self.line = list()
+        for item, item_type in zip(split_line, parent.get_types()):
+            print item_type
+            self.line.append(parser.parse(item, item_type))
+
         self.parent = parent
 
     def __repr__(self):
-        return "/".join(self.line_string)
+        return "/".join(self.line)
 
     def __str__(self):
-        return "/".join(self.line_string)
+        return "/".join(self.line)
 
     def __unicode__(self):
-        return "/".join(self.line_string)
+        return "/".join(self.line)
 
     def __getattr__(self, attr):
         if not attr.isalnum():
             raise AttributeError("TSVx variables must be alphanumeric")
         index = self.parent.variable_index(attr)
-        return self.line_string[index]
+        return self.line[index]
 
     def __getitem__(self, attr):
         if isinstance(attr, basestring):
             if not attr.isalnum():
                 raise AttributeError("TSVx variables must be alphanumeric")
             index = self.parent.variable_index(attr)
-            return self.line_string[index]
+            return self.line[index]
         elif isinstance(attr, int):
-            return self.line_string[attr]
+            return self.line[attr]
 
     def __len__(self):
-        return len(self.line_string)
+        return len(self.line)
 
     def __iter__(self):
-        for item in self.line_string:
+        for item in self.line:
             yield item
 
     def values(self):
-        return self.line_string
+        return self.line
 
     def keys(self):
         return self.parent.line_header['var']
@@ -77,6 +78,9 @@ class TSVxReader(TSVxReaderWriter):
         self.line_header = line_header
         self.generator = generator
 
+    def get_types(self):
+        return self.line_header['python-types']
+        
     def __iter__(self):
         return (TSVxLine(x, self) for x in self.generator)
 

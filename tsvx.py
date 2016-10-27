@@ -17,9 +17,16 @@ def reader(to_be_parsed):
         return _parse_generator(to_be_parsed)
 
 def writer(destination):
+    '''
+    TSVx Writer
+    '''
     return tsv_types.TSVxWriter(destination)
 
 def _parse_generator(generator):
+    '''
+    From a stream, pick out the headers and metadata, and create
+    a new TSVxReader based on those. Return the TSVxReader object.
+    '''
     (first, generator) = helpers.peek(generator)
     if ":" in first:
         metadata = yaml.safe_load(helpers.read_to_dash(generator))
