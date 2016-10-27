@@ -1,0 +1,2 @@
+class TSVXFileFormatException(Exception):
+    pass

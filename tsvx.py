@@ -1,8 +1,8 @@
 import itertools
+import sys
 import yaml
 
 import helpers
-
 import tsv_types
 
 def reader(to_be_parsed):
@@ -16,13 +16,13 @@ def reader(to_be_parsed):
     else:
         return _parse_generator(to_be_parsed)
 
-def writer(vars = None):
-    pass
+def writer(destination):
+    return tsv_types.TSVxWriter(destination)
 
 def _parse_generator(generator):
     (first, generator) = helpers.peek(generator)
     if ":" in first:
-        metadata = yaml.load(helpers.read_to_dash(generator))
+        metadata = yaml.safe_load(helpers.read_to_dash(generator))
     else:
         metadata = {}
 
@@ -37,7 +37,7 @@ def _parse_generator(generator):
         value = ":".join(line[:-1].split(':')[1:]).split('\t')[1:]
         line_headers[key] = value
 
-    return tsv_types.TSVx(metadata, line_headers, generator)
+    return tsv_types.TSVxReader(metadata, line_headers, generator)
 
 if __name__ == '__main__':
     t = reader(open("example.tsvx"))
@@ -52,3 +52,21 @@ if __name__ == '__main__':
             print line[i],
         print dict(line)
         print list(line)
+    
+    names = ["sam", "joe", "alex"]
+    ages = [34, 45, 12]
+    locations = ["left", "middle", "right"]
+    votes = [True, False, False]
+ 
+    w = writer(sys.stdout)
+    w.headers(["Name", "Age", "Location", "Vote"])
+    w.variables(["name", "age", "location", "vote"])
+    w.types([str, int, str, bool])
+    w.title("Sample file")
+
+    print
+
+    w.write_headers()
+
+    for name, age, location, vote in zip(names, ages, locations, votes):
+        w.write(name, age, location, vote)
