@@ -73,14 +73,26 @@ def _encodedatetime(dateobject):
     '''
     return str(dateobject)
 
-# Python type/JSON type/parse
+# Elements:
+#
+# * Python type name
+# * JSON type name
+# * Function to convert from string to data (parser)
+# * Function to convert from data to string (encoder)
+# * Regular expressions. These are /not/ all-inclusive or helpful for
+#   validation. These are helpful for automagical
+#   detection. Therefore, "769" will match as int but not as float,
+#   even though it is a valid float. These are also not guaranteed
+#   to be complete -- some types might not have these, and we will
+#   fall back to String types for those.
+
 TYPE_MAP = [
-    ["int", "Number", int, str],
-    ["float", "Number", float, str],
-    ["bool", "Boolean", _parsebool, _encodebool],
-    ["str", "String", _parsestr, _encodestr],
-    ["ISO8601-datetime", "String", _parsedatetime, _encodedatetime],
-    ["ISO8601-date", "String", _parsedate, _encodedate]
+    ["int", "Number", int, str, ["^-?[0-9]+$"]],
+    ["float", "Number", float, str, ["^-?[0-9]+\.[0-9]*$", "^-?[0-9]+\.[0-9]*e-?[0-9]+$"]],
+    ["bool", "Boolean", _parsebool, _encodebool, ["^true$", "^false$"]],
+    ["ISO8601-datetime", "String", _parsedatetime, _encodedatetime, ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.?[0-9]*$"]],
+    ["ISO8601-date", "String", _parsedate, _encodedate, ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]$"]],
+    ["str", "String", _parsestr, _encodestr, [".*"]]
 ]
 
 
@@ -89,7 +101,7 @@ def parse(string, python_type):
     Find appropriate parser for the given type, and parse string to
     Python data type
     '''
-    for python_type_string, json_type, parser, encoder in TYPE_MAP:
+    for python_type_string, json_type, parser, encoder, regexp in TYPE_MAP:
         if python_type_string == python_type:
             return parser(string)
     raise exceptions.TSVxFileFormatException(
@@ -102,7 +114,7 @@ def encode(string, python_type):
     Find appropriate encoder for the given type, and encode Python
     data type to string
     '''
-    for python_type_string, json_type, parser, encoder in TYPE_MAP:
+    for python_type_string, json_type, parser, encoder, regexp in TYPE_MAP:
         if python_type_string == python_type:
             return encoder(string)
     raise exceptions.TSVxFileFormatException(

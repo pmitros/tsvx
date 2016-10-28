@@ -10,5 +10,8 @@ setup(
     description='Prototype package for TSVx files',
     packages=[
         'tsvx'
+    ],
+    scripts=[
+        'scripts/tsv2tsvx.py'
     ]
 )
