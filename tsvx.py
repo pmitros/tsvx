@@ -1,26 +1,33 @@
-import itertools
+'''
+This file defines the top-level operations -- the reader and
+writer. These are exported at the module level in __init__.py
+'''
+
 import sys
 import yaml
 
 import helpers
 import tsv_types
 
+
 def reader(to_be_parsed):
     '''
     TSVx Reader. This can handle both text data and stream
     data. Perhaps break it up in the future?
     '''
-    
+
     if isinstance(to_be_parsed, basestring):
         return _parse_generator(to_be_parsed.split("\n"))
     else:
         return _parse_generator(to_be_parsed)
+
 
 def writer(destination):
     '''
     TSVx Writer
     '''
     return tsv_types.TSVxWriter(destination)
+
 
 def _parse_generator(generator):
     '''
@@ -59,12 +66,12 @@ if __name__ == '__main__':
             print line[i],
         print dict(line)
         print list(line)
-    
+
     names = ["sam", "joe", "alex"]
     ages = [34, 45, 12]
     locations = ["left", "middle", "right"]
     votes = [True, False, False]
- 
+
     w = writer(sys.stdout)
     w.headers(["Name", "Age", "Location", "Vote"])
     w.variables(["name", "age", "location", "vote"])

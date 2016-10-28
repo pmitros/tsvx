@@ -1,4 +1,9 @@
+'''
+Simple generic utility functions not specific to TSVx
+'''
+
 import itertools
+
 
 def peek(generator):
     '''
@@ -8,6 +13,7 @@ def peek(generator):
     first = generator.next()
     generator = itertools.chain([first], generator)
     return (first, generator)
+
 
 def read_to_dash(generator):
     '''
