@@ -52,6 +52,7 @@ files are a tab-seprated format, with several extensions:</p>
 </ul>
 <p>This is repository includes (at the time of this writing, the start
 of) a parser for such tab-separated files. </p>
+<h3>Example</h3>
 <p>Example file:</p>
 <pre><code>title: Food inventory
 description: A sample TSVx file
@@ -61,13 +62,14 @@ generator: test.py
 Food Name   Weight  Price   Expiration Date
 var:    foodname    weight  price   expiration
 types:  str int float   ISO8601-date
-units:  None    kg  dollars/kg  ISO8601-date
+units:  null    kg  dollars/kg  null
 json-types: String  Number  Number  String
 mysql-types:    VARCHAR(80) SMALLINT    DOUBLE  VARCHAR(20)
 ---------------------
 Tuna    300 5.13    2017-10-12
 Salmon  150 7.13    2018-10-12
 </code></pre>
+<h3>Structure</h3>
 <p>The file has three sections:</p>
 <ul>
 <li>Metadata (optional)</li>
@@ -76,30 +78,47 @@ Salmon  150 7.13    2018-10-12
 </ul>
 <p>Sections are seperated by a line of all dashes, containing at least
 three dashes.</p>
+<h3>Metadata</h3>
 <p>The metadata is a YAML dictionary. The first line must contain a
 colon. Fields defined are:</p>
 <ul>
-<li>title -- A single line title/description</li>
-<li>description -- A multiline description</li>
-<li>authors  -- JSON list of authors</li>
-<li>created-date -- ISO8601 date and time of when the file was created</li>
-<li>modified-date -- ISO8601 date and time of last modification</li>
-<li>generator -- Some identifier of the program or source the data came
+<li><code>title</code> -- A single line title/description</li>
+<li><code>description</code> -- A multiline description</li>
+<li><code>authors</code> -- JSON list of authors</li>
+<li><code>created-date</code> -- ISO8601 date and time of when the file was created</li>
+<li><code>modified-date</code> -- ISO8601 date and time of last modification</li>
+<li><code>generator</code> -- Some identifier of the program or source the data came
   from</li>
 </ul>
+<h3>Headers</h3>
 <p>First line of the headers are human-readable column headers. Following
 lines define additional information about each column. Required are
 types and json-types, which say how the data ought to be
 interpreted. Currently defined types are:</p>
 <ul>
-<li>int -- Integer</li>
-<li>float -- Floating point number, either containing a space or otherwise</li>
-<li>bool -- Boolean</li>
-<li>ISO8601-datetime -- Date and time as 2014-12-30T11:59:00.01</li>
-<li>ISO8601-date -- Date as 2014-12-30</li>
-<li>str -- JSON-encoded string (quotes omitted)</li>
+<li><code>int</code> -- Integer</li>
+<li><code>float</code> -- Floating point number, either containing a space or otherwise</li>
+<li><code>bool -- Boolean.</code>true<code>or</code>false`</li>
+<li><code>ISO8601-datetime</code> -- Date and time as <code>2014-12-30T11:59:00.01</code></li>
+<li><code>ISO8601-date</code> -- Date as <code>2014-12-30</code></li>
+<li><code>str</code> -- JSON-encoded string (quotes omitted)</li>
 </ul>
-<p>JSON types are String, Number, or Boolean.</p>
+<p>As a fallback, all lines should also be defined as one of three JSON types:</p>
+<ul>
+<li><code>String</code> -- Most other data types fall into this category</li>
+<li><code>Number</code> -- Integer or floating point</li>
+<li><code>Boolean</code> -- <code>true</code> or <code>false</code></li>
+</ul>
+<p>In addition, there may be headers for</p>
+<ul>
+<li>Variable names. These should be letters, numbers, and underscores,
+  but may not begin with a number. This is convenient for automatic
+  parsers.</li>
+<li>Types for specific programs. For example, a MySQL export should be
+  importable without losing the field size for strings, and a
+  spreadsheet export should be able to keep formatting on re-import.</li>
+<li>Units. </li>
+</ul>
         </section>
 
         <footer>

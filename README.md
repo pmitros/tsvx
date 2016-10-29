@@ -24,6 +24,9 @@ files are a tab-seprated format, with several extensions:
 This is repository includes (at the time of this writing, the start
 of) a parser for such tab-separated files. 
 
+Example
+=======
+
 Example file:
 
     title: Food inventory
@@ -34,13 +37,15 @@ Example file:
     Food Name	Weight	Price	Expiration Date
     var:	foodname	weight	price	expiration
     types:	str	int	float	ISO8601-date
-    units:	None	kg	dollars/kg	ISO8601-date
+    units:	null	kg	dollars/kg	null
     json-types:	String	Number	Number	String
     mysql-types:	VARCHAR(80)	SMALLINT	DOUBLE	VARCHAR(20)
     ---------------------
     Tuna	300	5.13	2017-10-12
     Salmon	150	7.13	2018-10-12
 
+Structure
+=========
 
 The file has three sections:
 
@@ -51,27 +56,47 @@ The file has three sections:
 Sections are seperated by a line of all dashes, containing at least
 three dashes.
 
+Metadata
+========
+
 The metadata is a YAML dictionary. The first line must contain a
 colon. Fields defined are:
 
-* title -- A single line title/description
-* description -- A multiline description
-* authors  -- JSON list of authors
-* created-date -- ISO8601 date and time of when the file was created
-* modified-date -- ISO8601 date and time of last modification
-* generator -- Some identifier of the program or source the data came
+* `title` -- A single line title/description
+* `description` -- A multiline description
+* `authors` -- JSON list of authors
+* `created-date` -- ISO8601 date and time of when the file was created
+* `modified-date` -- ISO8601 date and time of last modification
+* `generator` -- Some identifier of the program or source the data came
   from
+
+Headers
+=======
 
 First line of the headers are human-readable column headers. Following
 lines define additional information about each column. Required are
 types and json-types, which say how the data ought to be
 interpreted. Currently defined types are:
 
-* int -- Integer
-* float -- Floating point number, either containing a space or otherwise
-* bool -- Boolean
-* ISO8601-datetime -- Date and time as 2014-12-30T11:59:00.01
-* ISO8601-date -- Date as 2014-12-30
-* str -- JSON-encoded string (quotes omitted)
+* `int` -- Integer
+* `float` -- Floating point number, either containing a space or otherwise
+* `bool -- Boolean. `true` or `false`
+* `ISO8601-datetime` -- Date and time as `2014-12-30T11:59:00.01`
+* `ISO8601-date` -- Date as `2014-12-30`
+* `str` -- JSON-encoded string (quotes omitted)
 
-JSON types are String, Number, or Boolean.
+As a fallback, all lines should also be defined as one of three JSON types:
+
+* `String` -- Most other data types fall into this category
+* `Number` -- Integer or floating point
+* `Boolean` -- `true` or `false`
+
+In addition, there may be headers for
+
+* Variable names. These should be letters, numbers, and underscores,
+  but may not begin with a number. This is convenient for automatic
+  parsers.
+* Types for specific programs. For example, a MySQL export should be
+  importable without losing the field size for strings, and a
+  spreadsheet export should be able to keep formatting on re-import.
+* Units. 
