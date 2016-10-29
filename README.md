@@ -24,6 +24,13 @@ files are a tab-seprated format, with several extensions:
 This is repository includes (at the time of this writing, the start
 of) a parser for such tab-separated files. 
 
+Status
+======
+
+This is intended as a **request for comments**. We have early
+prototype functionality, but we'd like to see what communities think
+about this before building this out further.
+
 Example
 =======
 
