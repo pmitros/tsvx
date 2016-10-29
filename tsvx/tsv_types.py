@@ -96,7 +96,7 @@ class TSVxReader(TSVxReaderWriter):
         self.generator = generator
 
     def get_types(self):
-        return self.line_header['python-types']
+        return self.line_header['types']
 
     def __iter__(self):
         return (TSVxLine(x, self) for x in self.generator)
@@ -134,7 +134,7 @@ class TSVxWriter(TSVxReaderWriter):
             self.destination.write(metadata)
             self.destination.write("-"*10 + "\n")
         self.destination.write("\t".join(self._headers) + "\n")
-        self.destination.write("python-types:\t" +
+        self.destination.write("types:\t" +
                                "\t".join([x for x in self._types]) +
                                "\n")
 
