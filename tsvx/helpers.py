@@ -33,3 +33,36 @@ def read_to_dash(generator):
             break
         lines.append(line)
     return "\n".join(lines)
+
+
+existing_variables = set()
+def variable_from_string(header):
+    '''
+    Given a header item, create a unique variable name. Such a name
+    should be unique, consist of letters, numbers, and underscores.
+    >>> variable_from_string("123 This is a string")
+    '_123_This_is_a_string'
+    >>> variable_from_string("123 This is a string")
+    '_123_This_is_a_string0'
+    >>> variable_from_string("valid_identifier")
+    'valid_identifier'
+    '''
+    # Make sure variable is numbers, letters, and underscores, and
+    # does not begin with a number
+    candidate = header.strip().replace(' ', '_')
+    candidate = "".join(x for x in candidate if x.isalnum() or x == '_')
+    if candidate[0].isdigit():
+        candidate = '_' + candidate
+    # Make sure variable is unique
+    if candidate in existing_variables:
+        i = 0
+        while candidate+str(i) in existing_variables:
+            i = i+1
+        candidate = candidate+str(i)
+    existing_variables.add(candidate)
+    return candidate
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

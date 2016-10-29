@@ -3,7 +3,7 @@ really would prefer a complex utility, which can do everything
 automagically, but for now, simple will do.
 
 Usage: 
-  tsv2tsvx <input> <output>
+  tsv2tsvx [<input>] [<output>]
   tsv2tsvx -h | --help
 
 Options:
@@ -24,23 +24,41 @@ import sys
 import tsvx
 
 import tsvx.helpers
+import tsvx.parser        
 
 arguments = docopt.docopt(__doc__)
 
 inputfile = arguments["<input>"]
 outputfile = arguments["<output>"]
 
-if os.path.exists(outputfile):
-    print "Error: Output file already exists. Please erase it first."
-    sys.exit(-1)
+ofp = sys.stdout
+if outputfile:
+    if os.path.exists(outputfile):
+        print "Error: Output file already exists. Please erase it first."
+        sys.exit(-1)
+    ofp = open(outputfile, "w")
 
-if not os.path.exists(inputfile):
-    print "Error: Input file doesn't exist."
-    sys.exit(-1)
+ifp = sys.stdin
+if inputfile:
+    if not os.path.exists(inputfile):
+        print "Error: Input file doesn't exist."
+        sys.exit(-1)
 
-ifp = open(inputfile, "r")
-ofp = open(outputfile, "w")
+    ifp = open(inputfile, "r")
 
-(headers, ifp) = tsvx.helpers.peek(ifp, 2)
+
+headers = ifp.next()
+ofp.write(headers)
+split_headers = headers[:-1].split('\t')
+vars = [tsvx.helpers.variable_from_string(x) for x in split_headers]
+ofp.write("variables:\t"+"\t".join(vars)+"\n")
+(sample_line, ifp) = tsvx.helpers.peek(ifp)
+type_headers = zip(*map(tsvx.parser.guess_type, sample_line[:-1].split('\t')))
+ofp.write("types:\t"+"\t".join(type_headers[0])+"\n")
+ofp.write("json-types:\t"+"\t".join(type_headers[1])+"\n")
+ofp.write("-----\n")
+
+for line in ifp:
+    ofp.write(line)
 
 ofp.close()

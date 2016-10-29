@@ -4,8 +4,10 @@ to map those to type strings in the header.
 '''
 
 import datetime
+import dateutil.parser
 import exceptions
 import json
+import re
 
 
 def _encodebool(boolean):
@@ -73,6 +75,24 @@ def _encodedatetime(dateobject):
     '''
     return str(dateobject)
 
+def _parseunknowndate(datestring):
+    '''
+    Parse a date, guessing the format. This is *slow*, but
+    sometimes helpful.
+    '''
+    return dateutil.parser.parse(datestring)
+
+def _is_random_date_string(datestring):
+    '''
+    Check whether something is a date string
+    which dateutil can handle
+    '''
+    try:
+        dateutil.parser.parse(datestring)
+        return True
+    except ValueError:
+        return False
+
 # Elements:
 #
 # * Python type name
@@ -92,14 +112,40 @@ TYPE_MAP = [
     ["bool", "Boolean", _parsebool, _encodebool, ["^true$", "^false$"]],
     ["ISO8601-datetime", "String", _parsedatetime, _encodedatetime, ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.?[0-9]*$"]],
     ["ISO8601-date", "String", _parsedate, _encodedate, ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]$"]],
+    ["unformatted-datetime", "String", _parseunknowndate, _encodedatetime, [_is_random_date_string]],
     ["str", "String", _parsestr, _encodestr, [".*"]]
 ]
+
+
+def guess_type(string):
+    '''
+    Based on a string, guess the type associated with that string. For
+    example:
+
+    >>> guess_type("0")
+    ('int', 'Number')
+    >>> guess_type("2014-05-06")
+    ('ISO8601-date', 'String')
+    '''
+    for python_type_string, json_type, parser, encoder, regexps in TYPE_MAP:
+        for regexp in regexps:
+            if isinstance(regexp, basestring):
+                if re.compile(regexp).match(string):
+                    return (python_type_string, json_type)
+            elif regexp(string):
+                return (python_type_string, json_type)
+    return None
 
 
 def parse(string, python_type):
     '''
     Find appropriate parser for the given type, and parse string to
-    Python data type
+    Python data type. For example:
+
+    >>> parse("0", "int")
+    0
+    >>> parse("2014-05-06", "ISO8601-date")
+    datetime.date(2014, 5, 6)
     '''
     for python_type_string, json_type, parser, encoder, regexp in TYPE_MAP:
         if python_type_string == python_type:
@@ -112,7 +158,12 @@ def parse(string, python_type):
 def encode(string, python_type):
     '''
     Find appropriate encoder for the given type, and encode Python
-    data type to string
+    data type to string. For example:
+
+    >>> encode(0, "int")
+    '0'
+    >>> encode(datetime.date(2014, 5, 6), "ISO8601-date")
+    '2014-05-06'
     '''
     for python_type_string, json_type, parser, encoder, regexp in TYPE_MAP:
         if python_type_string == python_type:
@@ -120,3 +171,7 @@ def encode(string, python_type):
     raise exceptions.TSVxFileFormatException(
         "Unknown type TSVx encoding " + python_type
     )
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

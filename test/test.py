@@ -32,3 +32,9 @@ w.write_headers()
 
 for name, age, location, vote in zip(names, ages, locations, votes):
     w.write(name, age, location, vote)
+
+print tsvx.parser.guess_type("0")
+print tsvx.parser.guess_type("1.4")
+print tsvx.parser.guess_type("Hello")
+print tsvx.parser.guess_type("2014-05-06")
+print tsvx.parser.guess_type("2014-05-06T05:12:12")
