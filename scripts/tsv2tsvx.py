@@ -51,11 +51,11 @@ headers = ifp.next()
 ofp.write(headers)
 split_headers = headers[:-1].split('\t')
 vars = [tsvx.helpers.variable_from_string(x) for x in split_headers]
-ofp.write("variables:\t"+"\t".join(vars)+"\n")
+ofp.write("\t".join(vars)+"\t(variables)\n")
 (sample_line, ifp) = tsvx.helpers.peek(ifp)
 type_headers = zip(*map(tsvx.parser.guess_type, sample_line[:-1].split('\t')))
-ofp.write("types:\t"+"\t".join(type_headers[0])+"\n")
-ofp.write("json-types:\t"+"\t".join(type_headers[1])+"\n")
+ofp.write("\t".join(type_headers[0])+"\t(types)\n")
+ofp.write("\t".join(type_headers[1])+"\t(json)\n")
 ofp.write("-----\n")
 
 for line in ifp:

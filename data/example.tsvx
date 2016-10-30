@@ -1,12 +1,14 @@
 title: Food inventory
 description: A sample TSVx file
+created-date: 2016-10-29T15:25:29.449640
+generator: test.py
 ---------------------
 Food Name	Weight	Price	Expiration Date
-var:	foodname	weight	price	expiration
-types:	str	int	float	ISO8601-date
-units:	None	kg	dollars/kg	ISO8601-date
-json-types:	String	Number	Number	String
-mysql-types:	VARCHAR(80)	SMALLINT	DOUBLE	VARCHAR(20)
+foodname	weight	price	expiration	(variables)
+str	int	float	ISO8601-date	(types)
+None	kg	dollars/kg	ISO8601-date	(units)
+String	Number	Number	String	(json)
+VARCHAR(80)	SMALLINT	DOUBLE	VARCHAR(20)	(mysql-types)
 ---------------------
 Tuna	300	5.13	2017-10-12
 Salmon	150	7.13	2018-10-12

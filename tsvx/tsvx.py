@@ -47,8 +47,8 @@ def _parse_generator(generator):
     for line in generator:
         if line.startswith('---'):
             break
-        key = line.split(':')[0]
-        value = ":".join(line[:-1].split(':')[1:]).split('\t')[1:]
+        key = line.split('\t')[-1][1:-2]
+        value = line[:-1].split('\t')[:-1]
         line_headers[key] = value
 
     return tsv_types.TSVxReader(metadata, line_headers, generator)

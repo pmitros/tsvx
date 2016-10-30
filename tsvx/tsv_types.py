@@ -68,7 +68,7 @@ class TSVxLine(object):
         return self.line
 
     def keys(self):
-        return self.parent.line_header['var']
+        return self.parent.line_header['variables']
 
 
 class TSVxReaderWriter(object):
@@ -76,11 +76,11 @@ class TSVxReaderWriter(object):
         return yaml.dump(self.metadata)+"/"+str(self.line_header)
 
     def variable_index(self, variable):
-        if 'var' not in self.line_header:
+        if 'variables' not in self.line_header:
             raise "No defined variable names"
-        if variable not in self.line_header['var']:
+        if variable not in self.line_header['variables']:
             raise "Variable undefined"
-        return self.line_header['var'].index(variable)
+        return self.line_header['variables'].index(variable)
 
 
 class TSVxReader(TSVxReaderWriter):
@@ -134,9 +134,8 @@ class TSVxWriter(TSVxReaderWriter):
             self.destination.write(metadata)
             self.destination.write("-"*10 + "\n")
         self.destination.write("\t".join(self._headers) + "\n")
-        self.destination.write("types:\t" +
-                               "\t".join([x for x in self._types]) +
-                               "\n")
+        self.destination.write("\t".join([x for x in self._types]) +
+                               "\t(types)\n")
 
         self.destination.write("-"*10 + "\n")
 

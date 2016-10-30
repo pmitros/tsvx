@@ -31,7 +31,7 @@
         <hr>
 
         <section id="main_content">
-	  <h3>TSVx: Enhanced TSV Format</h3>
+	  <h3>tsvx: Enhanced TSV Format</h3>
 <p>TSV is a nice format. It's human-readable, very fast to parse, and
 concise. It's possible to process as a streaming format.</p>
 <p>It's also painfully hard to work with due to lack of
@@ -44,62 +44,85 @@ pandas would be able to work with both.</p>
 <p>This is a prototype for working with an enhanced TSV format. tsvx
 files are a tab-seprated format, with several extensions:</p>
 <ul>
-<li>We standardize escaping. We use JSON-style escaping.</li>
+<li>We standardize string escaping. We use JSON-style escaping.</li>
 <li>We standardize column types to be JSON variables. We support
-  more types encoded as such</li>
+  more data types encoded as such</li>
 <li>We standardize on headers which can provide column names and type
-  metadata. Columns may have types, units, and similar</li>
+  metadata. Columns may have types, units, program-specific metadata,
+  and otherwise.</li>
 </ul>
 <p>This is repository includes (at the time of this writing, the start
-of) a parser for such tab-separated files. </p>
+of) a parser for such tab-separated files, so we can experiment with
+this concept.</p>
 <h3>Status</h3>
 <p>This is intended as a <strong>request for comments</strong>. We have early
 prototype functionality, but we'd like to see what communities think
-about this before building this out further.</p>
+about this before building this out further. We will have a
+request-for-comments period, which we will probably close off late
+2016 or early 2017.</p>
 <h3>Example</h3>
-<p>Example file:</p>
+<p>A basic example:</p>
 <pre><code>title: Food inventory
-description: A sample TSVx file
-created-date: '2016-10-29T15:25:29.449640'
-generator: test.py
+created-date: 2016-10-29T15:25:29.449640
 ---------------------
 Food Name   Weight   Price       Expiration Date
-foodname    weight   price       expiration      (variables)
 str         int      float       ISO8601-date    (types)
-null        kg       dollars/kg  null            (units)
 String      Number   Number      String          (json)
-VARCHAR(80) SMALLINT DOUBLE      VARCHAR(20)     (mysql-types)
 ---------------------
 Tuna        300      5.13        2017-10-12
 Salmon      150      7.18        2018-10-12
 Swordfish   250      9.41        2016-11-13
 </code></pre>
-<h3>Structure</h3>
+<p>And a more complex example:</p>
+<pre><code>title: Food inventory
+description: A sample tsvx file
+created-date: 2016-10-29T15:25:29.449640
+generator: myoffice.py
+myoffice-version: 2.7
+---------------------
+Food Name   Weight     Price       Expiration Date
+foodname    weight     price       expiration      (variables)
+str         int        float       ISO8601-date    (types)
+            kg         dollars/kg                  (units)
+String      Number     Number      String          (json)
+VARCHAR(80) SMALLINT   DOUBLE      VARCHAR(20)     (mysql-types)
+inventory   shipweight gross       exp             (myoffice-schema)
+%s          %i         %.2f        YYYY-MM-DD      (myoffice-format-strings)
+---------------------
+Tuna        300        5.13        2017-10-12
+Salmon      150        7.18        2018-10-24
+Swordfish   250        9.41        2016-11-13
+</code></pre>
+<h3>File Structure</h3>
 <p>The file has three sections:</p>
 <ul>
-<li>Metadata (optional)</li>
-<li>Headers (required)</li>
-<li>Data (required)</li>
+<li><strong>File metadata</strong> (optional) -- Information about the file itself</li>
+<li><strong>Column headings</strong> (required) -- Metadata about the names and types
+  in the columns</li>
+<li><strong>Data</strong> (required) -- What one might traditionally find in a TSV
+  file.</li>
 </ul>
 <p>Sections are seperated by a line of all dashes, containing at least
 three dashes.</p>
-<h3>Metadata</h3>
+<h3>File Metadata</h3>
 <p>The metadata is a YAML dictionary. The first line must contain a
-colon. Fields defined are:</p>
+colon, but we recommend having all lines in this format. Stadard
+fields include:</p>
 <ul>
 <li><code>title</code> -- A single line title/description</li>
 <li><code>description</code> -- A multiline description</li>
 <li><code>authors</code> -- JSON list of authors</li>
 <li><code>created-date</code> -- ISO8601 date and time of when the file was created</li>
 <li><code>modified-date</code> -- ISO8601 date and time of last modification</li>
-<li><code>generator</code> -- Some identifier of the program or source the data came
-  from</li>
+<li><code>generator</code> -- Some identifier of the program or source which created
+  the file</li>
 </ul>
-<h3>Headers</h3>
+<h3>Headers/Column Metadata</h3>
 <p>First line of the headers are human-readable column headers. Following
 lines define additional information about each column. Required are
-types and json-types, which say how the data ought to be
-interpreted. Currently defined types are:</p>
+<code>types</code> and <code>json</code>, which say how the data ought to be
+interpreted. <code>json</code> is a fallback in case the application cannot
+interpret a given type. Currently defined types are:</p>
 <ul>
 <li><code>int</code> -- Integer</li>
 <li><code>float</code> -- Floating point number, either containing a space or otherwise</li>
@@ -114,15 +137,28 @@ interpreted. Currently defined types are:</p>
 <li><code>Number</code> -- Integer or floating point</li>
 <li><code>Boolean</code> -- <code>true</code> or <code>false</code></li>
 </ul>
-<p>In addition, there may be headers for</p>
+<p>In addition, there may be headers for:</p>
 <ul>
-<li>Variable names. These should be letters, numbers, and underscores,
-  but may not begin with a number. This is convenient for automatic
-  parsers.</li>
-<li>Types for specific programs. For example, a MySQL export should be
-  importable without losing the field size for strings, and a
-  spreadsheet export should be able to keep formatting on re-import.</li>
-<li>Units. </li>
+<li><code>variable</code> gives useful variable names to assign in a program. These
+  should be letters, numbers, and underscores, but may not begin with
+  a number. This is convenient for automatic parsers and parser
+  generators.</li>
+<li>Metadata for specific programs. These should begin with a program
+  name and a dash, as in <code>mysql-types</code>.</li>
+<li>Units.</li>
+</ul>
+<h3>Design goals</h3>
+<ul>
+<li>Human-readability</li>
+<li>Spreadsheet compatibility (so file will open reasonably in a
+  spreadsheet not aware of tsvx)</li>
+<li>Fast, single-pass streaming processing (I can reasonably work with
+  tsvx files up to a few gigabytes, and I don't want to lose that)</li>
+<li>Compatibility between apps</li>
+<li>Extensibility. Programs should be able to include enough metadata
+  for meaningful import/export</li>
+<li>Enough metadata that, a year later, an analyst can tell what's in
+  a file, where it came from, and hopefully how to regenerate it</li>
 </ul>
         </section>
 
