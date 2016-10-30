@@ -41,15 +41,16 @@ Example file:
     created-date: '2016-10-29T15:25:29.449640'
     generator: test.py
     ---------------------
-    Food Name	Weight	Price	Expiration Date
-    foodname	weight	price	expiration	(variables)
-    str	int	float	ISO8601-date	(types)
-    null	kg	dollars/kg	null	(units)
-    String	Number	Number	String	(json)
-    VARCHAR(80)	SMALLINT	DOUBLE	VARCHAR(20)	(mysql-types)
+    Food Name   Weight   Price       Expiration Date
+    foodname    weight   price       expiration      (variables)
+    str         int      float       ISO8601-date    (types)
+    null        kg       dollars/kg  null            (units)
+    String      Number   Number      String          (json)
+    VARCHAR(80) SMALLINT DOUBLE      VARCHAR(20)     (mysql-types)
     ---------------------
-    Tuna	300	5.13	2017-10-12
-    Salmon	150	7.13	2018-10-12
+    Tuna        300      5.13        2017-10-12
+    Salmon      150      7.18        2018-10-12
+    Swordfish   250      9.41        2016-11-13
 
 Structure
 =========
