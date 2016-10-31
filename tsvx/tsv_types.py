@@ -6,8 +6,8 @@ import datetime
 import sys
 import yaml
 
+import helpers
 import parser
-
 
 class TSVxLine(object):
     '''
@@ -110,6 +110,7 @@ class TSVxWriter(TSVxReaderWriter):
             "generator": sys.argv[0]
         }
         self.line_header = dict()
+        self._variables = None
 
     def headers(self, headers):
         self._headers = headers
@@ -129,6 +130,13 @@ class TSVxWriter(TSVxReaderWriter):
         self.metadata['title'] = title
 
     def write_headers(self):
+
+        if not self._variables:
+            self._variables = [
+                helpers.variable_from_string(header)
+                for header
+                in self._headers]
+
         if self.metadata:
             metadata = yaml.dump(self.metadata, default_flow_style=False)
             self.destination.write(metadata)
@@ -136,6 +144,8 @@ class TSVxWriter(TSVxReaderWriter):
         self.destination.write("\t".join(self._headers) + "\n")
         self.destination.write("\t".join([x for x in self._types]) +
                                "\t(types)\n")
+        self.destination.write("\t".join([x for x in self._variables]) +
+                               "\t(variables)\n")
 
         self.destination.write("-"*10 + "\n")
 
