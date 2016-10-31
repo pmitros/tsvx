@@ -93,13 +93,13 @@ The metadata is a YAML dictionary. The first line must contain a
 colon, but we recommend having all lines in this format. Stadard
 fields include:
 
-* `title` -- A single line title/description
-* `description` -- A multiline description
 * `authors` -- JSON list of authors
 * `created-date` -- ISO8601 date and time of when the file was created
-* `modified-date` -- ISO8601 date and time of last modification
+* `description` -- A multiline description
 * `generator` -- Some identifier of the program or source which created
   the file
+* `modified-date` -- ISO8601 date and time of last modification
+* `title` -- A single line title/description
 
 Headers/Column Metadata
 =======================
@@ -110,18 +110,18 @@ lines define additional information about each column. Required are
 interpreted. `json` is a fallback in case the application cannot
 interpret a given type. Currently defined types are:
 
-* `int` -- Integer
-* `float` -- Floating point number, either containing a space or otherwise
-* `bool -- Boolean. `true` or `false`
-* `ISO8601-datetime` -- Date and time as `2014-12-30T11:59:00.01`
 * `ISO8601-date` -- Date as `2014-12-30`
+* `ISO8601-datetime` -- Date and time as `2014-12-30T11:59:00.01`
+* `bool -- Boolean. `true` or `false`
+* `float` -- Floating point number, either containing a space or otherwise
+* `int` -- Integer
 * `str` -- JSON-encoded string (quotes omitted)
 
 As a fallback, all lines should also be defined as one of three JSON types:
 
-* `String` -- Most other data types fall into this category
-* `Number` -- Integer or floating point
 * `Boolean` -- `true` or `false`
+* `Number` -- Integer or floating point
+* `String` -- Most other data types fall into this category
 
 In addition, there may be headers for:
 
@@ -137,12 +137,48 @@ Design goals
 ============
 
 * Human-readability
+* Compatibility between apps. It should be possible to go between
+  Excel, Google Docs, Hadoop, LibreOffice, MySQL, PostgreSQL, Python,
+  R, Vertica, and others without extensive scripting. This doesn't
+  need to be optimal (e.g. a fixed-sized string field might go to a
+  variable-sized string), but it should be workable.
 * Spreadsheet compatibility (so file will open reasonably in a
   spreadsheet not aware of tsvx)
 * Fast, single-pass streaming processing (I can reasonably work with
   tsvx files up to a few gigabytes, and I don't want to lose that)
-* Compatibility between apps
 * Extensibility. Programs should be able to include enough metadata
   for meaningful import/export
-* Enough metadata that, a year later, an analyst can tell what's in
-  a file, where it came from, and hopefully how to regenerate it
+* Enough metadata that, a year later, an analyst looking at a file can
+  tell what's in that file, where it came from, and hopefully how to
+  regenerate it with current data
+
+Why?
+====
+
+I work for a small ed-tech not-for-profit. In that role, We look at
+lots of data. As it turns out, there isn't a clear small data/big data
+split. We have educational researchers at universities, big data
+pipeline, business intelligence analysts, and all sorts of other folks
+all generating and working with data with different tools. Those often
+need to be combined. Even within one pipeline, data gets successively
+smaller. In my normal workflow, We'll usually start with terabytes of
+data, and end up with a graph. That usually starts with Hadoop which
+take TB down to GB, goes into Python scripts which take GB down to
+thousands or hundreds of lines, and the final steps are sometimes done
+in a spreadsheet. We often need to do `JOIN`s on such data -- for
+example, we have hand-curated lists (in spreadsheets) of metadata on
+courses, which we'd like to use in our big data pipelines.
+
+Each time we do this, we rewrite similar code, essentially casting
+strings of integers to integers, or parsing dates. Reuse of data files
+is also limited since looking at such files, it's not always clear
+what's in them, or how they were made. We do have documentation
+out-of-band (README files and similar), but looking through dozens of
+directories, in practice, that makes it several times slower to find
+an intermediate result from some analytics pipeline.
+
+Talking to people, I don't think we're alone. I'm tossing this up to
+get people's thoughts. The code and proposal are rough, but I thought
+I'd toss them up to solicit comments and discussion. Once we decide if
+this is a good way to do this, I'll make this more production-ready,
+and perhaps draft an IETF RFC or similar standard.
