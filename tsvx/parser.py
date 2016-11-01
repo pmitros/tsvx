@@ -1,6 +1,14 @@
 '''
 Defines the parsing logic for each of the column types, and how
 to map those to type strings in the header.
+
+For the most part, we'd like these to be *fast*. Working with large
+TSVx files takes time. We standardize formats in part to avoid
+heuristics.
+
+We do have several slower heuristic parsers to assist with TSV->TSVx
+conversion.
+
 '''
 
 import datetime
@@ -13,24 +21,50 @@ import re
 def _encodebool(boolean):
     '''
     Encode a bool with appropriate case
+    >>> _encodebool(True)
+    'true'
+    >>> _encodebool(False)
+    'false'
     '''
+    if not isinstance(boolean, bool):
+        raise TypeError("Trying to encode " +
+                        repr(boolean) +
+                        " of type " +
+                        type(boolean) +
+                        "as a boolean")
+
     if boolean:
         return "true"
     return "false"
 
 
 def _encodestr(string):
-    '''
+    r'''
     Escape a string with standard JSON encoding, omitting
     the quotes
+    >>> _encodestr("Hello\t")
+    'Hello\\t'
+    >>> _encodestr("Hello")
+    'Hello'
     '''
+    if not isinstance(string, basestring):
+        raise TypeError("Trying to encode " +
+                        repr(string) +
+                        " of type " +
+                        type(string) +
+                        "as a string")
+
     return json.dumps(string)[1:-1]
 
 
 def _parsestr(string):
-    '''
+    r'''
     Escape a string with standard JSON encoding, omitting
     the quotes
+    >>> _parsestr("Hello")
+    u'Hello'
+    >>> _parsestr("Hello\\t")
+    u'Hello\t'
     '''
     return json.loads('"'+string+'"')
 
@@ -38,6 +72,10 @@ def _parsestr(string):
 def _parsebool(boolean):
     '''
     Read a boolean
+    >>> _parsebool("true")
+    True
+    >>> _parsebool("false")
+    False
     '''
     if boolean.lower() == "false":
         return False
@@ -51,6 +89,8 @@ def _parsebool(boolean):
 def _parsedate(datestring):
     '''
     Parse an ISO 8601 format date (without time)
+    >>> _parsedate("2012-11-21")
+    datetime.date(2012, 11, 21)
     '''
     return datetime.datetime.strptime(datestring, "%Y-%m-%d").date()
 
@@ -58,6 +98,8 @@ def _parsedate(datestring):
 def _encodedate(dateobject):
     '''
     Encode an ISO 8601 format date (without time)
+    >>> _encodedate(datetime.date(2012, 11, 21))
+    '2012-11-21'
     '''
     return str(dateobject)
 
@@ -65,6 +107,8 @@ def _encodedate(dateobject):
 def _parsedatetime(datestring):
     '''
     Parse an ISO 8601 format date-time (without time zone)
+    >>> _parsedatetime('2012-11-21T11:58:58')
+    datetime.datetime(2012, 11, 21, 11, 58, 58)
     '''
     return datetime.datetime.strptime(datestring, "%Y-%m-%dT%H:%M:%S")
 
@@ -72,20 +116,30 @@ def _parsedatetime(datestring):
 def _encodedatetime(dateobject):
     '''
     Encode an ISO 8601 format date-time (without time zone)
+    >>> _encodedatetime(datetime.datetime(2012, 11, 21, 11, 58, 58))
+    '2012-11-21T11:58:58'
     '''
-    return str(dateobject)
+    return dateobject.isoformat()
+
 
 def _parseunknowndate(datestring):
     '''
     Parse a date, guessing the format. This is *slow*, but
     sometimes helpful.
+    >>> _parseunknowndate("Oct 18, 2013 4pm")
+    datetime.datetime(2013, 10, 18, 16, 0)
     '''
     return dateutil.parser.parse(datestring)
+
 
 def _is_random_date_string(datestring):
     '''
     Check whether something is a date string
     which dateutil can handle
+    >>> _is_random_date_string("Oct 18, 2013 4pm")
+    True
+    >>> _is_random_date_string("I like salad")
+    False
     '''
     try:
         dateutil.parser.parse(datestring)
@@ -107,12 +161,19 @@ def _is_random_date_string(datestring):
 #   fall back to String types for those.
 
 TYPE_MAP = [
-    ["int", "Number", int, str, ["^-?[0-9]+$"]],
-    ["float", "Number", float, str, ["^-?[0-9]+\.[0-9]*$", "^-?[0-9]+\.[0-9]*e-?[0-9]+$"]],
-    ["bool", "Boolean", _parsebool, _encodebool, ["^true$", "^false$"]],
-    ["ISO8601-datetime", "String", _parsedatetime, _encodedatetime, ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.?[0-9]*$"]],
-    ["ISO8601-date", "String", _parsedate, _encodedate, ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]$"]],
-    ["unformatted-datetime", "String", _parseunknowndate, _encodedatetime, [_is_random_date_string]],
+    ["int", "Number", int, str,
+     ["^-?[0-9]+$"]],
+    ["float", "Number", float, str,
+     ["^-?[0-9]+\.[0-9]*$", "^-?[0-9]+\.[0-9]*e-?[0-9]+$"]],
+    ["bool", "Boolean", _parsebool, _encodebool,
+     ["^true$", "^false$"]],
+    ["ISO8601-datetime", "String", _parsedatetime, _encodedatetime,
+     ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]T"
+      "[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.?[0-9]*$"]],
+    ["ISO8601-date", "String", _parsedate, _encodedate,
+     ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]$"]],
+    ["unformatted-datetime", "String", _parseunknowndate, _encodedatetime,
+     [_is_random_date_string]],
     ["str", "String", _parsestr, _encodestr, [".*"]]
 ]
 

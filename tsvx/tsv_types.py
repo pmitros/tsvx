@@ -10,6 +10,7 @@ import helpers
 import parser
 import exceptions
 
+
 class TSVxLine(object):
     '''
     Represents a single line in the reader object. Lets you work
@@ -45,7 +46,9 @@ class TSVxLine(object):
                 "TSVx variables must be alphanumeric. " + attr
             )
             if attr.beginswith('_'):
-                raise exceptions.TSVxSuscpiciousOperation("Strange attribute "+attr+". Use get instead of attribute referencing")
+                raise exceptions.TSVxSuscpiciousOperation(
+                    "Strange attribute " + attr +
+                    ". Use get instead of attribute referencing")
         index = self.parent.variable_index(attr)
         return self.line[index]
 
@@ -80,9 +83,11 @@ class TSVxReaderWriter(object):
 
     def variable_index(self, variable):
         if 'variables' not in self.line_header:
-            raise exceptions.TSVxFileFormatException("No defined variable names: " + variable)
+            raise exceptions.TSVxFileFormatException(
+                "No defined variable names: " + variable)
         if variable not in self.line_header['variables']:
-            raise exceptions.TSVxFileFormatException("Variable undefined: " + variable)
+            raise exceptions.TSVxFileFormatException(
+                "Variable undefined: " + variable)
         return self.line_header['variables'].index(variable)
 
 

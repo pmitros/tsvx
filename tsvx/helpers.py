@@ -5,6 +5,7 @@ Simple generic utility functions not specific to TSVx
 import dateutil.parser
 import itertools
 
+
 def valid_variable(string):
     '''
     Check whether string is all numbers, letters, and underscores, and does
@@ -19,13 +20,25 @@ def valid_variable(string):
     return True
 
 
-def peek(generator, item_count = -1):
+def peek(generator, item_count=-1):
     '''
     Return the first item in the generator. Usage
        (first, generator) = peek(generator)
 
     Optionally, provide an item_count to return several items.
        (item_list, generator) = peek(generator, 7)
+
+    For example:
+    >>> (first, generator) = peek(iter(range(3)))
+    >>> first
+    0
+    >>> list(generator)
+    [0, 1, 2]
+    >>> (start, generator) = peek(iter(range(5)), 2)
+    >>> start
+    [0, 1]
+    >>> list(generator)
+    [0, 1, 2, 3, 4]
     '''
     if item_count == -1:
         first = generator.next()
@@ -50,16 +63,22 @@ def read_to_dash(generator):
 
 
 existing_variables = set()
+
+
 def variable_from_string(header):
     '''
-    Given a header item, create a unique variable name. Such a name
-    should be unique, consist of letters, numbers, and underscores.
+    Given a string, create a unique variable name. Such a name should
+    be unique, consist of letters, numbers, and underscores. This is
+    mostly intended to automagically create the `variables` line
+    from things like TSV headers.
+
     >>> variable_from_string("123 This is a string")
     '_123_This_is_a_string'
     >>> variable_from_string("123 This is a string")
     '_123_This_is_a_string0'
     >>> variable_from_string("valid_identifier")
     'valid_identifier'
+
     '''
     # Make sure variable is numbers, letters, and underscores, and
     # does not begin with a number
@@ -80,7 +99,7 @@ def variable_from_string(header):
 def datetime_to_ISO8601(d):
     '''
     Transform a freeform datetime to ISO8601 format
-    >>> date_to_ISO8601("10/28/2014")
+    >>> datetime_to_ISO8601("10/28/2014 00:00:00")
     '2014-10-28T00:00:00'
     '''
     return dateutil.parser.parse(d).isoformat()
@@ -98,6 +117,14 @@ def date_to_ISO8601(d):
 def to_bool(b):
     '''
     Transform flexible types to a boolean
+    >>> to_bool(True)
+    True
+    >>> to_bool(False)
+    False
+    >>> to_bool("yEs")
+    True
+    >>> to_bool("NO")
+    False
     '''
     if b in [True, False]:
         return b
