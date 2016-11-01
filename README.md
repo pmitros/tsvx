@@ -123,12 +123,14 @@ As a fallback, all lines should also be defined as one of three JSON types:
 * `Number` -- Integer or floating point
 * `String` -- Most other data types fall into this category
 
+If this is missing, parsers should treat unrecognized types as strings.
+
 In addition, there may be headers for:
 
-* `variable` gives useful variable names to assign in a program. These
+* `variables` gives useful variable names to assign in a program. These
   should be letters, numbers, and underscores, but may not begin with
   a number. This is convenient for automatic parsers and parser
-  generators.
+  generators. This is strongly recommended.
 * Metadata for specific programs. These should begin with a program
   name and a dash, as in `mysql-types`.
 * Units.
@@ -151,6 +153,13 @@ Design goals
 * Enough metadata that, a year later, an analyst looking at a file can
   tell what's in that file, where it came from, and hopefully how to
   regenerate it with current data
+
+Getting started
+===============
+
+There is a small file, `example/example.py`, which shows how the
+prototype reference library works. Note that both the API and file
+format are still mutable -- we are actively soliciting feedback.
 
 Why?
 ====

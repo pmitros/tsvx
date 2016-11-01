@@ -137,12 +137,13 @@ interpret a given type. Currently defined types are:</p>
 <li><code>Number</code> -- Integer or floating point</li>
 <li><code>String</code> -- Most other data types fall into this category</li>
 </ul>
+<p>If this is missing, parsers should treat unrecognized types as strings.</p>
 <p>In addition, there may be headers for:</p>
 <ul>
-<li><code>variable</code> gives useful variable names to assign in a program. These
+<li><code>variables</code> gives useful variable names to assign in a program. These
   should be letters, numbers, and underscores, but may not begin with
   a number. This is convenient for automatic parsers and parser
-  generators.</li>
+  generators. This is strongly recommended.</li>
 <li>Metadata for specific programs. These should begin with a program
   name and a dash, as in <code>mysql-types</code>.</li>
 <li>Units.</li>
@@ -165,6 +166,10 @@ interpret a given type. Currently defined types are:</p>
   tell what's in that file, where it came from, and hopefully how to
   regenerate it with current data</li>
 </ul>
+<h3>Getting started</h3>
+<p>There is a small file, <code>example/example.py</code>, which shows how the
+prototype reference library works. Note that both the API and file
+format are still mutable -- we are actively soliciting feedback.</p>
 <h3>Why?</h3>
 <p>I work for a small ed-tech not-for-profit. In that role, We look at
 lots of data. As it turns out, there isn't a clear small data/big data
