@@ -44,66 +44,81 @@ pandas would be able to work with both.</p>
 <p>This is a prototype for working with an enhanced TSV format. tsvx
 files are a tab-seprated format, with several extensions:</p>
 <ul>
-<li>We standardize string escaping. We use JSON-style escaping.</li>
-<li>We standardize column types to be JSON variables. We support
-  more data types encoded as such</li>
-<li>We standardize on headers which can provide column names and type
+<li>Columns are statically typed, and we standardize string escaping,
+  dates, and formatting of other standard data types.</li>
+<li>We standardize on headers which provide column names and type
   metadata. Columns may have types, units, program-specific metadata,
   and otherwise.</li>
+<li>We standardize overall file metadata, which can provide a description
+  of the content, providence, creation time, authors, and otherwise.</li>
 </ul>
 <p>This is repository includes (at the time of this writing, the start
-of) a parser for such tab-separated files, so we can experiment with
-this concept.</p>
-<h3>Status</h3>
-<p>This is intended as a <strong>request for comments</strong>. We have early
-prototype functionality, but we'd like to see what communities think
-about this before building this out further. We will have a
-request-for-comments period, which we will probably close off late
-2016 or early 2017.</p>
-<h3>Example</h3>
-<p>A basic example:</p>
+of) a simple parser for such files, so we can experiment with this
+concept.</p>
+<h3>What it looks like</h3>
 <pre><code>title: Food inventory
 created-date: 2016-10-29T15:25:29.449640
 ---------------------
 Food Name   Weight   Price       Expiration Date
+foodname    weight   netprice    exp             (variables)
 str         int      float       ISO8601-date    (types)
 String      Number   Number      String          (json)
 ---------------------
 Tuna        300      5.13        2017-10-12
 Salmon      150      7.18        2018-10-12
 Swordfish   250      9.41        2016-11-13
+...
 </code></pre>
-<p>And a more complex example:</p>
-<pre><code>title: Food inventory
-description: A sample tsvx file
-created-date: 2016-10-29T15:25:29.449640
-generator: myoffice.py
-myoffice-version: 2.7
----------------------
-Food Name   Weight     Price       Expiration Date
-foodname    weight     price       expiration      (variables)
-str         int        float       ISO8601-date    (types)
-            kg         dollars/kg                  (units)
-String      Number     Number      String          (json)
-VARCHAR(80) SMALLINT   DOUBLE      VARCHAR(20)     (mysql-types)
-inventory   shipweight gross       exp             (myoffice-schema)
-%s          %i         %.2f        YYYY-MM-DD      (myoffice-format-strings)
----------------------
-Tuna        300        5.13        2017-10-12
-Salmon      150        7.18        2018-10-24
-Swordfish   250        9.41        2016-11-13
-</code></pre>
+<h3>Why?</h3>
+<p>We have nice standards for documents (XML, as well as other markup
+languages). We have nice standards for objects and configuration data
+(YAML and JSON). We don't have any nice standards for tabular or
+numerical dataa.</p>
+<p>Numerical and tabular data is becoming increasingly important. It's
+also increasingly being used across tools. We often see organizations
+which have terabytes of data in systems like Hadoop and Vertica,
+gigabytes in databases and flat files, and kilobytes of hand-curated
+data in spreadsheets. Integration of data between such systems is
+increasingly important.</p>
+<p>Our design goals are:</p>
+<ul>
+<li><strong>Human-readability</strong></li>
+<li><strong>Basic interchange</strong> between Excel, Google Docs, Hadoop,
+  LibreOffice, MySQL, PostgreSQL, Python, R, Vertica, and others
+  without extensive scripting. This doesn't need to be optimal (e.g. a
+  fixed-sized string field might go to a variable-sized string), but
+  it should be workable</li>
+<li><strong>Simplification of parsing code</strong>, making processing scripts much
+  simpler and less brittle. With tsvx, adding a column or changing
+  column order doesn't break scripts.</li>
+<li><strong>Better reuse</strong>. We have many TSV files sitting around, often years
+  old, and often no great idea what's in them, or how to regenerate
+  them on current data. We want to add such documentation in-line.</li>
+<li>Some <strong>backwards-compatibility</strong>. A tsvx file will open reasonably
+  in a spreadsheet unaware of tsvx</li>
+<li><strong>Fast, single-pass processing</strong>. I can reasonably work with
+  tsvx files up to a few gigabytes</li>
+<li><strong>Extensibility</strong>. Programs should be able to include enough
+  metadata for meaningful import/export. If it becomes popular, tools
+  like mysqldump should be able to build on top of this</li>
+</ul>
+<h3>Status</h3>
+<p>We will have a <strong>request-for-comments period</strong>, which we will probably
+close off late 2016 or early 2017. Once we decide if this is a good
+way to do this, I'll make this more production-ready, and perhaps
+draft an IETF RFC or similar standard.</p>
 <h3>File Structure</h3>
 <p>The file has three sections:</p>
 <ul>
-<li><strong>File metadata</strong> (optional) -- Information about the file itself</li>
+<li><strong>File metadata</strong> (optional) -- Information about the file itself.</li>
 <li><strong>Column headings</strong> (required) -- Metadata about the names and types
   in the columns</li>
 <li><strong>Data</strong> (required) -- What one might traditionally find in a TSV
   file.</li>
 </ul>
 <p>Sections are seperated by a line of all dashes, containing at least
-three dashes.</p>
+three dashes. If the first section is omitted, the file should start
+with a line of dashes.</p>
 <h3>File Metadata</h3>
 <p>The metadata is a YAML dictionary. The first line must contain a
 colon, but we recommend having all lines in this format. Stadard
@@ -118,11 +133,10 @@ fields include:</p>
 <li><code>title</code> -- A single line title/description</li>
 </ul>
 <h3>Headers/Column Metadata</h3>
-<p>First line of the headers are human-readable column headers. Following
-lines define additional information about each column. Required are
-<code>types</code> and <code>json</code>, which say how the data ought to be
-interpreted. <code>json</code> is a fallback in case the application cannot
-interpret a given type. Currently defined types are:</p>
+<p>First line of the headers are human-readable column headers
+(required). Following lines define additional information about each
+column. Required is <code>types</code>, which says how the data ought to be
+interpreted. Currently defined types are:</p>
 <ul>
 <li><code>ISO8601-date</code> -- Date as <code>2014-12-30</code></li>
 <li><code>ISO8601-datetime</code> -- Date and time as <code>2014-12-30T11:59:00.01</code></li>
@@ -131,71 +145,81 @@ interpret a given type. Currently defined types are:</p>
 <li><code>int</code> -- Integer</li>
 <li><code>str</code> -- JSON-encoded string (quotes omitted)</li>
 </ul>
-<p>As a fallback, all lines should also be defined as one of three JSON types:</p>
+<p>As a fallback, we strongly recommend a json section. All columns
+shouldbe defined as one of three JSON types:</p>
 <ul>
 <li><code>Boolean</code> -- <code>true</code> or <code>false</code></li>
 <li><code>Number</code> -- Integer or floating point</li>
 <li><code>String</code> -- Most other data types fall into this category</li>
 </ul>
 <p>If this is missing, parsers should treat unrecognized types as strings.</p>
-<p>In addition, there may be headers for:</p>
-<ul>
-<li><code>variables</code> gives useful variable names to assign in a program. These
-  should be letters, numbers, and underscores, but may not begin with
-  a number. This is convenient for automatic parsers and parser
-  generators. This is strongly recommended.</li>
-<li>Metadata for specific programs. These should begin with a program
-  name and a dash, as in <code>mysql-types</code>.</li>
-<li>Units.</li>
-</ul>
-<h3>Design goals</h3>
-<ul>
-<li>Human-readability</li>
-<li>Compatibility between apps. It should be possible to go between
-  Excel, Google Docs, Hadoop, LibreOffice, MySQL, PostgreSQL, Python,
-  R, Vertica, and others without extensive scripting. This doesn't
-  need to be optimal (e.g. a fixed-sized string field might go to a
-  variable-sized string), but it should be workable.</li>
-<li>Spreadsheet compatibility (so file will open reasonably in a
-  spreadsheet not aware of tsvx)</li>
-<li>Fast, single-pass streaming processing (I can reasonably work with
-  tsvx files up to a few gigabytes, and I don't want to lose that)</li>
-<li>Extensibility. Programs should be able to include enough metadata
-  for meaningful import/export</li>
-<li>Enough metadata that, a year later, an analyst looking at a file can
-  tell what's in that file, where it came from, and hopefully how to
-  regenerate it with current data</li>
-</ul>
+<p><code>variables</code> is also strongly recommended. <code>variables</code> gives useful
+variable names to assign in a program. These should be letters,
+numbers, and underscores, but may not begin with a number. This is
+convenient for automatic parsers and parser generators.</p>
+<p>In addition, there may be headers for other metadata, such as units,
+or vendor extensions.  </p>
+<h3>Vendor Extensions</h3>
+<p>Vendors may add arbitray extensions to both metadata and headers. The
+keys should begin with a program name and a dash. For example, <code>mysql</code>
+could add rows called <code>mysql-types</code> and <code>mysql-keys</code> to the headers,
+which would allow imports/exports to maintain both type informations,
+and which columns are unique. <code>mysql</code> could also place global column
+metadata (such as multi-column constraints or storage engine) in the
+file-wide metadata with keys such as <code>mysql-constraints</code> and
+<code>mysql-engine</code>, or just in its own YAML section. </p>
+<p>Such extensions should pay close attention to human readability.</p>
 <h3>Getting started</h3>
-<p>There is a small file, <code>example/example.py</code>, which shows how the
-prototype reference library works. Note that both the API and file
-format are still mutable -- we are actively soliciting feedback.</p>
-<h3>Why?</h3>
-<p>I work for a small ed-tech not-for-profit. In that role, We look at
-lots of data. As it turns out, there isn't a clear small data/big data
-split. We have educational researchers at universities, big data
-pipeline, business intelligence analysts, and all sorts of other folks
-all generating and working with data with different tools. Those often
-need to be combined. Even within one pipeline, data gets successively
-smaller. In my normal workflow, We'll usually start with terabytes of
-data, and end up with a graph. That usually starts with Hadoop which
-take TB down to GB, goes into Python scripts which take GB down to
-thousands or hundreds of lines, and the final steps are sometimes done
-in a spreadsheet. We often need to do <code>JOIN</code>s on such data -- for
-example, we have hand-curated lists (in spreadsheets) of metadata on
-courses, which we'd like to use in our big data pipelines.</p>
-<p>Each time we do this, we rewrite similar code, essentially casting
-strings of integers to integers, or parsing dates. Reuse of data files
-is also limited since looking at such files, it's not always clear
-what's in them, or how they were made. We do have documentation
-out-of-band (README files and similar), but looking through dozens of
-directories, in practice, that makes it several times slower to find
-an intermediate result from some analytics pipeline.</p>
-<p>Talking to people, I don't think we're alone. I'm tossing this up to
-get people's thoughts. The code and proposal are rough, but I thought
-I'd toss them up to solicit comments and discussion. Once we decide if
-this is a good way to do this, I'll make this more production-ready,
-and perhaps draft an IETF RFC or similar standard.</p>
+<p>This is a before-and-after example of the same code, with a TSV file
+in Python, versus with a tsvx file and the library:</p>
+<p>After:</p>
+<pre><code>for line in tsvx.reader(open("file.tsvx"))
+   do_some_stuff(line.foodname,
+                 line.weight,
+                 line.price,
+                 line.expiration)
+</code></pre>
+<p>Before:</p>
+<pre><code>f = open("file.tsv")
+# Skip headers
+f.next()
+# Break on tabs
+split_lines = (l[:-1].split('\t') for l in f)
+# Parse to types
+parsed_lines = (
+   [l[0], int(l[1]), float(l[2]), dateutil.parser.parse(l[3])]
+   for l in split_lines
+)
+
+for foodname, weight, price, expiration in parsed_lines:
+   do_some_stuff(foodname, weight, price, expiration)
+</code></pre>
+<p>There is a also a small file in the repo, <code>example/example.py</code>, which
+shows how the prototype reference library works. Note that both the
+API and file format are still mutable -- we are actively soliciting
+feedback.</p>
+<h3>A More Complex File</h3>
+<p>And a more complex example, to show how extension fit in:</p>
+<pre><code>title: Food inventory
+description: A sample tsvx file
+created-date: 2016-10-29T15:25:29.449640
+generator: myoffice.py
+myoffice-version: 2.7
+---------------------
+Food Name   Weight     Price       Expiration Date
+foodname    weight     price       expiration      (variables)
+str         int        float       ISO8601-date    (types)
+            kg         dollars/kg                  (units)
+String      Number     Number      String          (json)
+VARCHAR(80) SMALLINT   DOUBLE      VARCHAR(20)     (mysql-types)
+primary                                            (mysql-keys)
+inventory   shipweight gross       exp             (myoffice-schema)
+%s          %i         %.2f        YYYY-MM-DD      (myoffice-format-strings)
+---------------------
+Tuna        300        5.13        2017-10-12
+Salmon      150        7.18        2018-10-24
+Swordfish   250        9.41        2016-11-13
+</code></pre>
         </section>
 
         <footer>
