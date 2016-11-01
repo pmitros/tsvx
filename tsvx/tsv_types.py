@@ -8,6 +8,7 @@ import yaml
 
 import helpers
 import parser
+import exceptions
 
 class TSVxLine(object):
     '''
@@ -39,17 +40,19 @@ class TSVxLine(object):
         return "/".join(unicode(item) for item in self.line)
 
     def __getattr__(self, attr):
-        if not attr.isalnum():
-            raise exceptions.TSVXFileFormatException(
+        if not helpers.valid_variable(attr):
+            raise exceptions.TSVxFileFormatException(
                 "TSVx variables must be alphanumeric. " + attr
             )
+            if attr.beginswith('_'):
+                raise exceptions.TSVxSuscpiciousOperation("Strange attribute "+attr+". Use get instead of attribute referencing")
         index = self.parent.variable_index(attr)
         return self.line[index]
 
     def __getitem__(self, attr):
         if isinstance(attr, basestring):
-            if not attr.isalnum():
-                raise exceptions.TSVXFileFormatException(
+            if not helpers.valid_variable(attr):
+                raise exceptions.TSVxFileFormatException(
                     "TSVx variables must be alphanumeric. " + attr
                 )
             index = self.parent.variable_index(attr)
@@ -77,9 +80,9 @@ class TSVxReaderWriter(object):
 
     def variable_index(self, variable):
         if 'variables' not in self.line_header:
-            raise "No defined variable names"
+            raise exceptions.TSVxFileFormatException("No defined variable names: " + variable)
         if variable not in self.line_header['variables']:
-            raise "Variable undefined"
+            raise exceptions.TSVxFileFormatException("Variable undefined: " + variable)
         return self.line_header['variables'].index(variable)
 
 
@@ -129,6 +132,9 @@ class TSVxWriter(TSVxReaderWriter):
     def title(self, title):
         self.metadata['title'] = title
 
+    def description(self, description):
+        self.metadata['description'] = description
+
     def write_headers(self):
 
         if not self._variables:
@@ -156,3 +162,10 @@ class TSVxWriter(TSVxReaderWriter):
             in zip(args, self._types)
         ]
         self.destination.write("\t".join(encoded)+"\n")
+
+    def close(self):
+        '''
+        Convenience function so we don't need to keep file pointers
+        around.
+        '''
+        self.destination.close()

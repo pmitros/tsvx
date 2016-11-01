@@ -5,6 +5,20 @@ Simple generic utility functions not specific to TSVx
 import dateutil.parser
 import itertools
 
+def valid_variable(string):
+    '''
+    Check whether string is all numbers, letters, and underscores, and does
+    not begin with a number.
+    '''
+    if string[0].isdigit():
+        return False
+    if len(string) == 0:
+        return False
+    if not string.replace('_', '').isalnum():
+        return False
+    return True
+
+
 def peek(generator, item_count = -1):
     '''
     Return the first item in the generator. Usage
