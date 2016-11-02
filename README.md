@@ -5,30 +5,27 @@ concise. It's possible to process as a streaming format.
 
 It's also painfully hard to work with due to lack of
 standardization. Each file requires a different set of heuristics to
-load. In addition, the columns must be parsed in a different way for
-every file.
+interpret.
 
-If this proposal is successful, ideally, e.g. a spreadsheet would be
-able to open a MySQL export without prompting the user for help, and
-pandas would be able to work with both.
+This is a proposal for an enhanced TSV format. If this proposal is
+successful, a spreadsheet would be able to open a MySQL export without
+prompting the user for help, and pandas would be able to work with
+both.
 
-This is a prototype for working with an enhanced TSV format. tsvx
-files are a tab-seprated format, with several extensions:
+tsvx files are a tab-seprated format, with several additions:
 
-* Columns are statically typed, and we standardize string escaping,
-  dates, and formatting of other standard data types.
-* We standardize on headers which provide column names and type
-  metadata. Columns may have types, units, program-specific metadata,
-  and otherwise.
-* We standardize overall file metadata, which can provide a description
-  of the content, providence, creation time, authors, and otherwise.
+* Columns are statically typed, with declared types, and standardized
+  string escaping, dates, and similar for other data types.
+* We standardize column headers which provide metadata about column
+  names, types, and contents.
+* We standardize overall metadata for overall file description,
+  providence, creation time, authors, and otherwise.
 
-This is repository includes (at the time of this writing, the start
-of) a simple parser for such files, so we can experiment with this
-concept.
+This is repository includes a simple parser for such files so we can
+experiment with this concept.
 
-What it looks like
-==================
+What tsvx looks like
+====================
 
     title: Food inventory
     created-date: 2016-10-29T15:25:29.449640
@@ -48,45 +45,44 @@ Why?
 
 We have nice standards for documents (XML, as well as other markup
 languages). We have nice standards for objects and configuration data
-(YAML and JSON). We don't have any nice standards for tabular or
-numerical dataa.
+(YAML and JSON). While numerical and tabular data is becoming
+increasingly important, we don't have any nice standards for
+representing it; it is very ad-hoc.
 
-Numerical and tabular data is becoming increasingly important. It's
-also increasingly being used across tools. We often see organizations
-which have terabytes of data in systems like Hadoop and Vertica,
-gigabytes in databases and flat files, and kilobytes of hand-curated
-data in spreadsheets. Integration of data between such systems is
-increasingly important.
+It is also increasingly being interchanged across tools. We see
+organizations which have terabytes of data in systems like Hadoop and
+Vertica, gigabytes in databases and flat files, and kilobytes of
+hand-curated data in spreadsheets, all of which is integrated in
+common systems.
 
 Our design goals are:
 
 * **Human-readability**
-* **Basic interchange** between Excel, Google Docs, Hadoop,
-  LibreOffice, MySQL, PostgreSQL, Python, R, Vertica, and others
-  without extensive scripting. This doesn't need to be optimal (e.g. a
-  fixed-sized string field might go to a variable-sized string), but
-  it should be workable
-* **Simplification of parsing code**, making processing scripts much
-  simpler and less brittle. With tsvx, adding a column or changing
-  column order doesn't break scripts.
-* **Better reuse**. We have many TSV files sitting around, often years
-  old, and often no great idea what's in them, or how to regenerate
-  them on current data. We want to add such documentation in-line.
-* Some **backwards-compatibility**. A tsvx file will open reasonably
-  in a spreadsheet unaware of tsvx
-* **Fast, single-pass processing**. I can reasonably work with
-  tsvx files up to a few gigabytes
-* **Extensibility**. Programs should be able to include enough
-  metadata for meaningful import/export. If it becomes popular, tools
-  like mysqldump should be able to build on top of this
+* **Compatibility**. Excel, Google Docs, Hadoop, LibreOffice, MySQL,
+  PostgreSQL, Python, R, Vertica, and other tools should open each
+  other's imports and exports, maintainnig basic type information
+  without additional scripting.
+* **Simple parsing**. Processing scripts are simpler and less
+  brittle. With tsvx, adding a column or changing column order doesn't
+  break scripts.
+* **In-Line Documentation**. We have many TSV files sitting around,
+  often years old, and no idea of what they contain, or how to
+  regenerate them on current data.
+* **Backwards-compatibility**. A tsvx file should open reasonably in
+  spreadsheets unaware of tsvx
+* **Fast, single-pass processing**. tsvx files are usable up to
+  perhaps 10GB of data.
+* **Extensibility**. If it becomes popular, it should be able to
+  replace formats from tools like mysqldump with something less
+  ad-hoc.
 
 Status
 ======
 
 We will have a **request-for-comments period**, which we will probably
-close off late 2016 or early 2017. Once we decide if this is a good
-way to do this, I'll make this more production-ready, and perhaps
-draft an IETF RFC or similar standard.
+close off late 2016 or early 2017. If we decide this is a good idea,
+we'll make this more production-ready, and perhaps draft an IETF RFC
+or similar standard.
 
 File Structure
 ==============
