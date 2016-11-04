@@ -12,7 +12,7 @@ successful, a spreadsheet would be able to open a MySQL export without
 prompting the user for help, and pandas would be able to work with
 both.
 
-tsvx files are a tab-seprated format, with several additions:
+tsvx files are a tab-separated format, with several additions:
 
 * Columns are statically typed, with declared types, and standardized
   string escaping, dates, and similar for other data types.
@@ -60,7 +60,7 @@ Our design goals are:
 * **Human-readability**
 * **Compatibility**. Excel, Google Docs, Hadoop, LibreOffice, MySQL,
   PostgreSQL, Python, R, Vertica, and other tools should open each
-  other's imports and exports, maintainnig basic type information
+  other's imports and exports, maintaining basic type information
   without additional scripting.
 * **Simple parsing**. Processing scripts are simpler and less
   brittle. With tsvx, adding a column or changing column order doesn't
@@ -95,7 +95,7 @@ The file has three sections:
 * **Data** (required) -- What one might traditionally find in a TSV
   file.
 
-Sections are seperated by a line of all dashes, containing at least
+Sections are separated by a line of all dashes, containing at least
 three dashes. If the first section is omitted, the file should start
 with a line of dashes.
 
@@ -103,7 +103,7 @@ File Metadata
 =============
 
 The metadata is a YAML dictionary. The first line must contain a
-colon, but we recommend having all lines in this format. Stadard
+colon, but we recommend having all lines in this format. Standard
 fields include:
 
 * `authors` -- JSON list of authors
@@ -130,7 +130,7 @@ interpreted. Currently defined types are:
 * `str` -- JSON-encoded string (quotes omitted)
 
 As a fallback, we strongly recommend a json section. All columns
-shouldbe defined as one of three JSON types:
+should be defined as one of three JSON types:
 
 * `Boolean` -- `true` or `false`
 * `Number` -- Integer or floating point
@@ -149,10 +149,10 @@ or vendor extensions.
 Vendor Extensions
 =================
 
-Vendors may add arbitray extensions to both metadata and headers. The
+Vendors may add arbitrary extensions to both metadata and headers. The
 keys should begin with a program name and a dash. For example, `mysql`
 could add rows called `mysql-types` and `mysql-keys` to the headers,
-which would allow imports/exports to maintain both type informations,
+which would allow imports/exports to maintain both type information,
 and which columns are unique. `mysql` could also place global column
 metadata (such as multi-column constraints or storage engine) in the
 file-wide metadata with keys such as `mysql-constraints` and

@@ -41,7 +41,7 @@ interpret.</p>
 successful, a spreadsheet would be able to open a MySQL export without
 prompting the user for help, and pandas would be able to work with
 both.</p>
-<p>tsvx files are a tab-seprated format, with several additions:</p>
+<p>tsvx files are a tab-separated format, with several additions:</p>
 <ul>
 <li>Columns are statically typed, with declared types, and standardized
   string escaping, dates, and similar for other data types.</li>
@@ -82,7 +82,7 @@ common systems.</p>
 <li><strong>Human-readability</strong></li>
 <li><strong>Compatibility</strong>. Excel, Google Docs, Hadoop, LibreOffice, MySQL,
   PostgreSQL, Python, R, Vertica, and other tools should open each
-  other's imports and exports, maintainnig basic type information
+  other's imports and exports, maintaining basic type information
   without additional scripting.</li>
 <li><strong>Simple parsing</strong>. Processing scripts are simpler and less
   brittle. With tsvx, adding a column or changing column order doesn't
@@ -112,12 +112,12 @@ or similar standard.</p>
 <li><strong>Data</strong> (required) -- What one might traditionally find in a TSV
   file.</li>
 </ul>
-<p>Sections are seperated by a line of all dashes, containing at least
+<p>Sections are separated by a line of all dashes, containing at least
 three dashes. If the first section is omitted, the file should start
 with a line of dashes.</p>
 <h3>File Metadata</h3>
 <p>The metadata is a YAML dictionary. The first line must contain a
-colon, but we recommend having all lines in this format. Stadard
+colon, but we recommend having all lines in this format. Standard
 fields include:</p>
 <ul>
 <li><code>authors</code> -- JSON list of authors</li>
@@ -142,7 +142,7 @@ interpreted. Currently defined types are:</p>
 <li><code>str</code> -- JSON-encoded string (quotes omitted)</li>
 </ul>
 <p>As a fallback, we strongly recommend a json section. All columns
-shouldbe defined as one of three JSON types:</p>
+should be defined as one of three JSON types:</p>
 <ul>
 <li><code>Boolean</code> -- <code>true</code> or <code>false</code></li>
 <li><code>Number</code> -- Integer or floating point</li>
@@ -156,10 +156,10 @@ convenient for automatic parsers and parser generators.</p>
 <p>In addition, there may be headers for other metadata, such as units,
 or vendor extensions.  </p>
 <h3>Vendor Extensions</h3>
-<p>Vendors may add arbitray extensions to both metadata and headers. The
+<p>Vendors may add arbitrary extensions to both metadata and headers. The
 keys should begin with a program name and a dash. For example, <code>mysql</code>
 could add rows called <code>mysql-types</code> and <code>mysql-keys</code> to the headers,
-which would allow imports/exports to maintain both type informations,
+which would allow imports/exports to maintain both type information,
 and which columns are unique. <code>mysql</code> could also place global column
 metadata (such as multi-column constraints or storage engine) in the
 file-wide metadata with keys such as <code>mysql-constraints</code> and
