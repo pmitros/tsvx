@@ -32,7 +32,7 @@ print "writer has a convenient w.close() operation too."
 w = tsvx.writer(sys.stdout)
 w.headers(["Name", "Age", "Location", "Vote"])
 w.variables(["name", "age", "location", "vote"])
-w.types([str, int, str, bool])
+w.python_types([str, int, str, bool])
 w.title("Sample file")
 
 w.write_headers()

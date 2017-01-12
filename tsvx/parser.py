@@ -47,14 +47,21 @@ def _encodestr(string):
     >>> _encodestr("Hello")
     'Hello'
     '''
+    if string is None:
+        # TODO: Find a better encoding?
+        return '"null"'
     if not isinstance(string, basestring):
         raise TypeError("Trying to encode " +
                         repr(string) +
                         " of type " +
-                        type(string) +
-                        "as a string")
-
-    return json.dumps(string)[1:-1]
+                        type(string).__name__ +
+                        " as a string")
+    try:
+        dump = json.dumps(string)[1:-1]
+    except UnicodeDecodeError:
+        # TODO: Find a better encoding?
+        dump = repr(str)
+    return dump
 
 
 def _parsestr(string):
@@ -101,6 +108,9 @@ def _encodedate(dateobject):
     >>> _encodedate(datetime.date(2012, 11, 21))
     '2012-11-21'
     '''
+    if dateobject is None:
+        # TODO: Find a better encoding?
+        return '"null"'
     return str(dateobject)
 
 
@@ -119,6 +129,9 @@ def _encodedatetime(dateobject):
     >>> _encodedatetime(datetime.datetime(2012, 11, 21, 11, 58, 58))
     '2012-11-21T11:58:58'
     '''
+    if dateobject is None:
+        # TODO: Find a better encoding?
+        return '"null"'
     return dateobject.isoformat()
 
 
@@ -163,6 +176,7 @@ def _is_random_date_string(datestring):
 TYPE_MAP = [
     ["int", "Number", int, str,
      ["^-?[0-9]+$"]],
+    ["NoneType", "null", lambda x: None, lambda x: "null", ["None", "null"]],
     ["float", "Number", float, str,
      ["^-?[0-9]+\.[0-9]*$", "^-?[0-9]+\.[0-9]*e-?[0-9]+$"]],
     ["bool", "Boolean", _parsebool, _encodebool,

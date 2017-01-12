@@ -2,3 +2,5 @@ python-dateutil
 docopt
 pyyaml
 markdown
+click
+mysql

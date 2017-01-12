@@ -2,14 +2,14 @@
 really would prefer a complex utility, which can do everything
 automagically, but for now, simple will do.
 
-Usage: 
+Usage:
   tsv2tsvx [<input>] [<output>]
   tsv2tsvx -h | --help
 
 Options:
   -h --help        Show this screen.
 
-TODO: 
+TODO:
   [--title=<title>] [--types=<types>]  [--vars=<vars>]
   --title=<title>  Add a title to the file
   --types=<types>  A comma-seperated list of types for the columns
@@ -24,7 +24,7 @@ import sys
 import tsvx
 
 import tsvx.helpers
-import tsvx.parser        
+import tsvx.parser
 
 arguments = docopt.docopt(__doc__)
 

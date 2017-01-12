@@ -74,21 +74,21 @@ class TSVxLine(object):
         return self.line
 
     def keys(self):
-        return self.parent.line_header['variables']
+        return self.parent._line_header['variables']
 
 
 class TSVxReaderWriter(object):
     def __repr__(self):
-        return yaml.dump(self.metadata)+"/"+str(self.line_header)
+        return yaml.dump(self.metadata)+"/"+str(self._line_header)
 
     def variable_index(self, variable):
-        if 'variables' not in self.line_header:
+        if 'variables' not in self._line_header:
             raise exceptions.TSVxFileFormatException(
                 "No defined variable names: " + variable)
-        if variable not in self.line_header['variables']:
+        if variable not in self._line_header['variables']:
             raise exceptions.TSVxFileFormatException(
                 "Variable undefined: " + variable)
-        return self.line_header['variables'].index(variable)
+        return self._line_header['variables'].index(variable)
 
 
 class TSVxReader(TSVxReaderWriter):
@@ -100,11 +100,11 @@ class TSVxReader(TSVxReaderWriter):
         Create a new TS
         '''
         self.metadata = metadata
-        self.line_header = line_header
+        self._line_header = line_header
         self.generator = generator
 
     def get_types(self):
-        return self.line_header['types']
+        return self._line_header['types']
 
     def __iter__(self):
         return (TSVxLine(x, self) for x in self.generator)
@@ -117,7 +117,7 @@ class TSVxWriter(TSVxReaderWriter):
             "created-date": datetime.datetime.utcnow().isoformat(),
             "generator": sys.argv[0]
         }
-        self.line_header = dict()
+        self._line_header = dict()
         self._variables = None
 
     def headers(self, headers):
@@ -126,7 +126,17 @@ class TSVxWriter(TSVxReaderWriter):
     def variables(self, variables):
         self._variables = variables
 
-    def types(self, types):
+    def line_header(self, headername, values):
+        self._line_header[headername] = values
+
+    def python_types(self, types):
+        '''
+        Takes a list of Python types, or strings. A Python type
+        might be int, float, or similar. A string might be
+        "ISO8601-date."
+
+        Populates the type information based on this.
+        '''
         self._types = list()
         for t in types:
             if isinstance(t, basestring):
@@ -140,8 +150,10 @@ class TSVxWriter(TSVxReaderWriter):
     def description(self, description):
         self.metadata['description'] = description
 
-    def write_headers(self):
+    def add_metadata(self, key, value):
+        self.metadata[key] = value
 
+    def write_headers(self):
         if not self._variables:
             self._variables = [
                 helpers.variable_from_string(header)
@@ -157,10 +169,29 @@ class TSVxWriter(TSVxReaderWriter):
                                "\t(types)\n")
         self.destination.write("\t".join([x for x in self._variables]) +
                                "\t(variables)\n")
+        for key in sorted(self._line_header):
+            values = self._line_header[key]
+            self.destination.write("\t".join([x for x in values]) +
+                                   "\t("+key+")\n")
 
         self.destination.write("-"*10 + "\n")
 
     def write(self, *args):
+        '''
+        Write a row into the TSV file. Takes items to write as
+        arguments in their native types. Passes all items in the array
+        through an encoder to convert them into the correct strings,
+        adds tabs, and writes them.
+        '''
+        if len(args) != len(self._types):
+            raise ValueError(
+                "Length of row items {rows} does not match "
+                "number of rows {types}: {arg}".format(
+                    rows=len(args),
+                    types=len(self._types),
+                    arg=repr(args)
+                )
+            )
         encoded = [
             parser.encode(item, item_type)
             for item, item_type
@@ -171,6 +202,6 @@ class TSVxWriter(TSVxReaderWriter):
     def close(self):
         '''
         Convenience function so we don't need to keep file pointers
-        around.
+        around. This closes the stream associated with the writer.
         '''
         self.destination.close()
