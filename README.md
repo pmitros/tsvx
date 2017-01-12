@@ -3,16 +3,19 @@
 TSV is a nice format. It's human-readable, very fast to parse, and
 concise. It's possible to process as a streaming format.
 
-It's also painfully hard to work with due to lack of
-standardization. Each file requires a different set of heuristics to
-interpret.
+It's also painfully hard to work with due to lack of standardization
+and typing. Each file requires a different set of heuristics to
+interpret. Those heuristics might break 80GB into a 100GB file, when
+an oddball case comes up. Those heuristics also translate into a
+tremendous amount of unnecessary ETL work. Even importing a TSV/CSV
+into a spreadsheet causes a dialog to pop up.
 
 This is a proposal for an enhanced TSV format. If this proposal is
 successful, a spreadsheet would be able to open a MySQL export without
 prompting the user for help, and pandas would be able to work with
 both.
 
-tsvx files are a tab-separated format, with several additions:
+tsvx files are a tab-separated format, where:
 
 * Columns are statically typed, with declared types, and standardized
   string escaping, dates, and similar for other data types.
@@ -22,7 +25,8 @@ tsvx files are a tab-separated format, with several additions:
   providence, creation time, authors, and otherwise.
 
 This is repository includes a simple parser for such files so we can
-experiment with this concept.
+experiment with this concept. It also includes a script to export from
+MySQL.
 
 What tsvx looks like
 ====================
@@ -47,7 +51,7 @@ We have nice standards for documents (XML, as well as other markup
 languages). We have nice standards for objects and configuration data
 (YAML and JSON). While numerical and tabular data is becoming
 increasingly important, we don't have any nice standards for
-representing it; it is very ad-hoc.
+representing it; it is all very ad-hoc.
 
 It is also increasingly being interchanged across tools. We see
 organizations which have terabytes of data in systems like Hadoop and
@@ -79,10 +83,9 @@ Our design goals are:
 Status
 ======
 
-We will have a **request-for-comments period**, which we will probably
-close off late 2016 or early 2017. If we decide this is a good idea,
-we'll make this more production-ready, and perhaps draft an IETF RFC
-or similar standard.
+We are in a **request-for-comments period**. If we decide this is a
+good idea, we'll make this more production-ready, and perhaps draft an
+IETF RFC or similar standard.
 
 File Structure
 ==============
