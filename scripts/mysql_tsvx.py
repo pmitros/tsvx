@@ -32,23 +32,18 @@ Options:
 
 '''
 
-import MySQLdb
-import click
 import docopt
 import sys
-import tsvx
 import os.path
 
 import helpers
 
-# Configuration: Parse arguments, open database, open file, etc.
-
 arguments = docopt.docopt(__doc__)
-
 cursor = helpers.mysql_connect(arguments)
 
 if not arguments["--output"]:
-    filename = database+"-" + table + ".tsvx"
+    filename = arguments["--database"] + \
+               "-" + arguments["--table"] + ".tsvx"
 else:
     filename = arguments["--output"]
 

@@ -1,6 +1,9 @@
 import MySQLdb
 import click
+import numbers
 import tsvx
+
+mysql_escape = None
 
 
 def mysql_connect(arguments):
@@ -8,11 +11,13 @@ def mysql_connect(arguments):
     Given arguments from docopt, connect to a database, and return the
     cursor object
     '''
+    global mysql_escape
     db = MySQLdb.connect(host=arguments["--host"],
                          port=int(arguments["--port"]),
                          user=arguments["--user"],
                          passwd=arguments["--password"],
                          db=arguments["--database"])
+    mysql_escape = db.escape_string
     c = db.cursor()
     return c
 
@@ -28,17 +33,33 @@ def scrape_mysql_table_to_tsvx(filename, cursor, database, table,
     writer = tsvx.writer(open(filename, "w"))
 
     # Get table headers and information
-    rows = write_table_metadata(
+    write_table_metadata(
         cursor, writer, database, table, row_limit
     )
 
+    if writer.get_metadata('mysql-rows') == "0":
+        writer.close()
+        return
+
     # Figure out how to partition the data
     id_range = partition_data(
-        cursor, writer, table, rows,
+        cursor, writer, table,
         row_limit, max_step)
 
     # Now, grab the data itself
-    grab_table_data(cursor, writer, table, id_range)
+    if id_range is not None:
+        grab_table_data(cursor, writer, table, id_range)
+    else:
+        writer.close()
+
+
+def primary_key(writer):
+    '''
+    For a TSVx writer with MySQL metadata, return the primary key
+    '''
+    pri_key_index = writer.line_header("mysql-key").index("PRI")
+    pri_key = writer.headers()[pri_key_index]
+    return pri_key
 
 
 def write_table_metadata(cursor, writer, database, table, row_limit=None):
@@ -46,11 +67,13 @@ def write_table_metadata(cursor, writer, database, table, row_limit=None):
     Ask the database about the table. Extract the metadata. Write
     it to a TSVx writer.
     '''
+    # First, we grab column headers
     writer.title("MySQL Export of %s from %s" % (table, database))
     cursor.execute("DESCRIBE " + table)
     headers = [i[0] for i in cursor.description]
     rowdata = list(cursor)
 
+    # Now we write them into the appropriate fields
     for key, value in zip(headers, zip(*rowdata)):
         if key == "Field":
             writer.headers(value)
@@ -59,6 +82,7 @@ def write_table_metadata(cursor, writer, database, table, row_limit=None):
         else:
             writer.line_header("mysql-"+key.lower(), map(str, value))
 
+    # Now we grab the metadata for the whole table
     cursor.execute('show table status where Name="'+table+'";')
     keys = [t[0] for t in cursor.description]
     values = list(cursor)[0]
@@ -67,13 +91,13 @@ def write_table_metadata(cursor, writer, database, table, row_limit=None):
             value = int(value)
         if key.lower() == "rows":
             if row_limit:
-                value = int(row_limit)
-            rows = value
+                if value > int(row_limit):
+                    value = int(row_limit)
         writer.add_metadata("mysql-"+key.lower(), value)
-    return rows
+    writer.write_headers()
 
 
-def partition_data(cursor, writer, table, rows, row_limit, max_step):
+def partition_data(cursor, writer, table, row_limit, max_step):
     '''
     We use this to return a set of breakpoints of table IDs so we can
     grab the database in steps. Grabbing a whole table is a bit
@@ -86,28 +110,68 @@ def partition_data(cursor, writer, table, rows, row_limit, max_step):
     (useful for debugging).
     '''
     print "Partioning data"
+    rows = writer.get_metadata('mysql-rows')
     id_range = []
+    pri_key = primary_key(writer)
     if max_step:
         step = int(max_step)
         with click.progressbar(range(0, rows, step), show_pos=True) as steps:
             for offset in steps:
-                cursor.execute('select id from ' +
-                               table +
-                               ' order by id limit 1 offset %s;' % (offset))
-                id_range.append(list(cursor)[0][0])
+                cursor.execute(
+                    'select `{pri}` from {table} order by `{pri}` '
+                    'limit 1 offset {offset};'.format(
+                        table=table,
+                        pri=pri_key,
+                        offset=offset)
+                )
+                offset_list = list(cursor)
+                if len(offset_list) > 0:
+                    id_range.append(offset_list[0][0])
+                else:
+                    continue
     else:
-        cursor.execute('select min(id) from '+table+';')
+        cursor.execute('select min(`{pri}`) from {table};'.format(
+            pri=pri_key,
+            table=table
+        ))
         id_range.append(list(cursor)[0][0])
 
-    if not row_limit:
-        cursor.execute('select max(id) from '+table+';')
-    else:
-        cursor.execute('select id from ' +
-                       table +
-                       ' order by id limit 1 offset %s;' % (rows))
-    id_range.append(list(cursor)[0][0]+1)
+    # This is a little complex so we can handle the case where there are fewer
+    # rows than the limit
+    row_max = None
+    if row_limit:
+        cursor.execute(
+            'select `{pri}` from {table} order by `{pri}` '
+            'limit 1 offset {rows};'.format(
+                pri=pri_key,
+                table=table,
+                rows=rows))
+        offset_list = list(cursor)
+        if len(offset_list) > 0:
+            row_max = offset_list[0][0]
+
+    if row_max is None:
+        cursor.execute('select max(`{pri}`) from {table};'.format(
+            pri=pri_key,
+            table=table
+        ))
+
+        max_id_list = list(cursor)
+        if len(max_id_list) > 0 and max_id_list[0][0] is not None:
+            last_row = max_id_list[0][0]
+            if isinstance(last_row, numbers.Number):
+                row_max = last_row + 1
+            elif isinstance(last_row, basestring):
+                row_max = last_row + 'Z'
+        else:
+            return None
+
+    id_range.append(row_max)
+
+    if isinstance(id_range[0], basestring):
+        id_range = ['"{id}"'.format(id=mysql_escape(id)) for id in id_range]
+
     print "Partitions:", id_range
-    writer.write_headers()
     return id_range
 
 
@@ -118,10 +182,12 @@ def grab_table_data(cursor, writer, table, id_range):
     '''
     print "Grabbing data for "+table
     ranges = zip(id_range[:-1], id_range[1:])
+    pri_key = primary_key(writer)
     with click.progressbar(ranges) as steps:
         for min_id, max_id in steps:
             sql_command = "select * from {table} where " \
-                          "id >= {min_id} and id < {max_id};".format(
+                          '`{pri}` >= {min_id} and `{pri}` < {max_id};'.format(
+                              pri=pri_key,
                               table=table,
                               min_id=min_id,
                               max_id=max_id
@@ -143,7 +209,12 @@ def mysql_to_python_type(type_string):
         "int": int,
         "tinyint": int,
         "smallint": int,
+        "bigint": int,
         "longtext": str,
+        "decimal": float,
+        "single": float,
+        "double": float,
+        "char": str,
         "date": "ISO8601-date",
         "datetime": "ISO8601-datetime"
     }

@@ -120,14 +120,20 @@ class TSVxWriter(TSVxReaderWriter):
         self._line_header = dict()
         self._variables = None
 
-    def headers(self, headers):
-        self._headers = headers
+    def headers(self, headers=None):
+        if headers:
+            self._headers = headers
+        else:
+            return self._headers
 
     def variables(self, variables):
         self._variables = variables
 
-    def line_header(self, headername, values):
-        self._line_header[headername] = values
+    def line_header(self, headername, values=None):
+        if values:
+            self._line_header[headername] = values
+        else:
+            return self._line_header[headername]
 
     def python_types(self, types):
         '''
@@ -152,6 +158,9 @@ class TSVxWriter(TSVxReaderWriter):
 
     def add_metadata(self, key, value):
         self.metadata[key] = value
+
+    def get_metadata(self, key):
+        return self.metadata[key]
 
     def write_headers(self):
         if not self._variables:
