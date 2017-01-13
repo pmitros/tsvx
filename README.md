@@ -1,4 +1,4 @@
-# tsvx: Enhanced TSV Format
+# tsvx: Strictly typed TSV format with metadata
 
 TSV is a nice format. It's human-readable, very fast to parse, and
 concise. It's possible to process as a streaming format.
@@ -12,8 +12,9 @@ into a spreadsheet causes a dialog to pop up.
 
 This is a proposal for an enhanced TSV format. If this proposal is
 successful, a spreadsheet would be able to open a MySQL export without
-prompting the user for help, and pandas would be able to work with
-both.
+prompting the user for help, and most data will flow freely between
+tools like pandas, tableau, R, and others (excepting issues of
+formatting and precision).
 
 tsvx files are a tab-separated format, where:
 
@@ -25,8 +26,8 @@ tsvx files are a tab-separated format, where:
   providence, creation time, authors, and otherwise.
 
 This is repository includes a simple parser for such files so we can
-experiment with this concept. It also includes a script to export from
-MySQL.
+experiment with this concept. It also includes scripts to export from
+MySQL, both on a table level and on a whole database level.
 
 What tsvx looks like
 ====================
