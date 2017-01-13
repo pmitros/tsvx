@@ -31,17 +31,21 @@
         <hr>
 
         <section id="main_content">
-	  <h3>tsvx: Enhanced TSV Format</h3>
+	  <h3>tsvx: Strictly typed TSV format with metadata</h3>
 <p>TSV is a nice format. It's human-readable, very fast to parse, and
 concise. It's possible to process as a streaming format.</p>
-<p>It's also painfully hard to work with due to lack of
-standardization. Each file requires a different set of heuristics to
-interpret.</p>
+<p>It's also painfully hard to work with due to lack of standardization
+and typing. Each file requires a different set of heuristics to
+interpret. Those heuristics might break 80GB into a 100GB file, when
+an oddball case comes up. Those heuristics also translate into a
+tremendous amount of unnecessary ETL work. Even importing a TSV/CSV
+into a spreadsheet causes a dialog to pop up.</p>
 <p>This is a proposal for an enhanced TSV format. If this proposal is
 successful, a spreadsheet would be able to open a MySQL export without
-prompting the user for help, and pandas would be able to work with
-both.</p>
-<p>tsvx files are a tab-separated format, with several additions:</p>
+prompting the user for help, and most data will flow freely between
+tools like pandas, tableau, R, and others (excepting issues of
+formatting and precision).</p>
+<p>tsvx files are a tab-separated format, where:</p>
 <ul>
 <li>Columns are statically typed, with declared types, and standardized
   string escaping, dates, and similar for other data types.</li>
@@ -51,7 +55,8 @@ both.</p>
   providence, creation time, authors, and otherwise.</li>
 </ul>
 <p>This is repository includes a simple parser for such files so we can
-experiment with this concept.</p>
+experiment with this concept. It also includes scripts to export from
+MySQL, both on a table level and on a whole database level.</p>
 <h3>What tsvx looks like</h3>
 <pre><code>title: Food inventory
 created-date: 2016-10-29T15:25:29.449640
@@ -71,7 +76,7 @@ Swordfish   250      9.41        2016-11-13
 languages). We have nice standards for objects and configuration data
 (YAML and JSON). While numerical and tabular data is becoming
 increasingly important, we don't have any nice standards for
-representing it; it is very ad-hoc.</p>
+representing it; it is all very ad-hoc.</p>
 <p>It is also increasingly being interchanged across tools. We see
 organizations which have terabytes of data in systems like Hadoop and
 Vertica, gigabytes in databases and flat files, and kilobytes of
@@ -99,10 +104,9 @@ common systems.</p>
   ad-hoc.</li>
 </ul>
 <h3>Status</h3>
-<p>We will have a <strong>request-for-comments period</strong>, which we will probably
-close off late 2016 or early 2017. If we decide this is a good idea,
-we'll make this more production-ready, and perhaps draft an IETF RFC
-or similar standard.</p>
+<p>We are in a <strong>request-for-comments period</strong>. If we decide this is a
+good idea, we'll make this more production-ready, and perhaps draft an
+IETF RFC or similar standard.</p>
 <h3>File Structure</h3>
 <p>The file has three sections:</p>
 <ul>
