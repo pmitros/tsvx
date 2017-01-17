@@ -1,5 +1,6 @@
 import MySQLdb
 import click
+import gzip
 import numbers
 import tsvx
 
@@ -23,14 +24,18 @@ def mysql_connect(arguments):
 
 
 def scrape_mysql_table_to_tsvx(filename, cursor, database, table,
-                               row_limit, max_step):
+                               row_limit, max_step, sequential_id=False):
     '''
     Scrape a MySQL table, outputting to a TSVx file. This is the
     top-level helper function.
 
     The way 'rows' is passed around is a bit of a hack.
     '''
-    writer = tsvx.writer(open(filename, "w"))
+    if filename.endswith(".gz"):
+        stream = gzip.open(filename, "w")
+    elif filename.endswith("tsvx"):
+        stream = open(filename, "w")
+    writer = tsvx.writer(stream)
 
     # Get table headers and information
     write_table_metadata(
@@ -42,10 +47,14 @@ def scrape_mysql_table_to_tsvx(filename, cursor, database, table,
         return
 
     # Figure out how to partition the data
-    id_range = partition_data(
-        cursor, writer, table,
-        row_limit, max_step)
-
+    if not sequential_id:
+        id_range = partition_data(
+            cursor, writer, table,
+            row_limit, max_step)
+    else:
+        id_range = sequential_partition_data(
+            cursor, writer, table,
+            row_limit, max_step)
     # Now, grab the data itself
     if id_range is not None:
         grab_table_data(cursor, writer, table, id_range)
@@ -95,6 +104,32 @@ def write_table_metadata(cursor, writer, database, table, row_limit=None):
                     value = int(row_limit)
         writer.add_metadata("mysql-"+key.lower(), value)
     writer.write_headers()
+
+
+def sequential_partition_data(cursor, writer, table, row_limit, max_step):
+    '''
+    We use this to return a set of breakpoints of table IDs so we can
+    grab the database in steps. Grabbing a whole table is a bit
+    expensive. This takes the shortcut of assuming IDs are numeric and
+    sequential.  Fast if they are, breaks if they aren't.
+    '''
+    print "Partioning data"
+    pri_key = primary_key(writer)
+    cursor.execute('select min(`{pri}`), max(`{pri}`) from {table};'.format(
+            pri=pri_key,
+            table=table
+        ))
+    (min_id, max_id) = (list(cursor)[0])
+
+    print "Data range is: ", min_id, max_id
+
+    if row_limit and max_id-min_id < row_limit:
+        r = [min_id, min_id+row_limit+1]
+        print "Full range", r
+    else:
+        r = range(min_id, max_id, int(max_step)) + [max_id + 1]
+        print "Partitions", r
+    return r
 
 
 def partition_data(cursor, writer, table, row_limit, max_step):

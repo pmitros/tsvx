@@ -19,7 +19,7 @@ Usage:
                 --password=password --database=database
                 --table=table  [--output=filename]
                 [--overwrite] [--max-step=maximum-step]
-                [--row-limit=row-limit]
+                [--row-limit=row-limit] [--seq-id-partition]
 
 Options:
   --output=filename     What file to output to. Otherwise, generate.
@@ -29,7 +29,10 @@ Options:
                         you do want consistency, set this to be larger
                         than the database.
   --row-limit=row-limit Only grab the first few rows. Useful for debugging!
-
+  --seq-id-partition    With a maximum step, just partition based on steps
+                        between minimum ID and maximum ID. Much faster for
+                        numeric, sequential IDs. Might be very slow with
+                        non-sequential IDs. Doesn't work with string IDs.
 '''
 
 import docopt
@@ -55,5 +58,6 @@ if os.path.exists(filename) and not arguments["--overwrite"]:
 
 helpers.scrape_mysql_table_to_tsvx(
     filename, cursor, arguments["--database"], arguments["--table"],
-    arguments["--row-limit"], arguments["--max-step"]
+    arguments["--row-limit"], arguments["--max-step"],
+    arguments["--seq-id-partition"]
 )
