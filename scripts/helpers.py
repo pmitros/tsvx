@@ -1,5 +1,6 @@
 import MySQLdb
 import click
+import collections
 import gzip
 import numbers
 import tsvx
@@ -259,3 +260,30 @@ def mysql_to_python_type(type_string):
     raise ValueError("Cannot convert %s to a Python type. "
                      "Please add it to the mysql_type_map "
                      "in this file" % (type_string))
+
+
+def probe_mongo_schema(mongoclient, database, collection):
+    '''
+    Create a dictionary of all the field names in a Mongo database,
+    and their associated types. Takes a MongoClient, a database name,
+    and a collection name. Returns a dictionary mapping field names
+    (e.g. "top_level.mid_level.bottom_level") to lists of types which
+    occur under that name.
+    '''
+    def flatson(fields, json, prefix=""):
+	'''
+        Helper script to recursively crawl JSON dictionary, extract types,
+        and convert to dot format.
+        '''
+        for key in json:
+            if isinstance(json[key], dict):
+                flatson(fields, json[key], prefix+key+".")
+            else:
+                fields[prefix+key].add(type(json[key]).__name__)
+        return fields
+
+    cursor = mongoclient[database][collection].find()
+    fields = collections.defaultdict(lambda: set())
+    for item in cursor:
+        flatson(fields, item)
+    return dict(fields)
