@@ -41,7 +41,7 @@ def _parse_generator(generator):
         metadata = {}
 
     column_names = generator.next()[:-1].split('\t')
-
+    
     line_headers = dict()
 
     for line in generator:
@@ -51,4 +51,4 @@ def _parse_generator(generator):
         value = line[:-1].split('\t')[:-1]
         line_headers[key] = value
 
-    return tsv_types.TSVxReader(metadata, line_headers, generator)
+    return tsv_types.TSVxReader(column_names, metadata, line_headers, generator)

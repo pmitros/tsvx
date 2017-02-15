@@ -1,13 +1,17 @@
 '''
+UNFINISHED
+
 This script will, once finished, output a Mongo table as a TSVx
 file. It's a two-pass process. Pass 1 discovers the schemaless
 schema. Pass two exports it with that schema.
 
+It doesn't work for 
 
 Usage:
   mongo_tsvx.py --host=host --user=user --port=port
                 --password=password --database=database
                 --collection=collection
+                --omits=omits
 '''
 
 import docopt
@@ -25,6 +29,7 @@ username = arguments["--user"]
 client = MongoClient(host, port)
 db = client[database]
 db.authenticate(username, password)
-fields = helpers.probe_mongo_schema(client, database, collection)
+fields = helpers.probe_mongo_schema(
+    client, database, collection, omits=arguments["--omits"].split(",")
+)
 
-print fields

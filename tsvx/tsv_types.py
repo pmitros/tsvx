@@ -26,8 +26,12 @@ class TSVxLine(object):
         '''
         split_line = line_string[:-1].split('\t')
         self.line = list()
-        for item, item_type in zip(split_line, parent.get_types()):
-            self.line.append(parser.parse(item, item_type))
+        try:
+            for item, item_type in zip(split_line, parent.types()):
+                self.line.append(parser.parse(item, item_type))
+        except:
+            print "Error parsing", line_string
+            raise
 
         self.parent = parent
 
@@ -93,18 +97,26 @@ class TSVxReaderWriter(object):
 
 class TSVxReader(TSVxReaderWriter):
     def __init__(self,
+                 column_names,
                  metadata,
                  line_header,
                  generator):
         '''
         Create a new TS
         '''
+        self._headers = column_names
         self.metadata = metadata
         self._line_header = line_header
         self.generator = generator
 
-    def get_types(self):
+    def types(self):
         return self._line_header['types']
+
+    def headers(self):
+        return self._headers
+
+    def variables(self):
+        return self._line_header['variables']
 
     def __iter__(self):
         return (TSVxLine(x, self) for x in self.generator)

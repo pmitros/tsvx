@@ -262,7 +262,7 @@ def mysql_to_python_type(type_string):
                      "in this file" % (type_string))
 
 
-def probe_mongo_schema(mongoclient, database, collection):
+def probe_mongo_schema(mongoclient, database, collection, omits=None):
     '''
     Create a dictionary of all the field names in a Mongo database,
     and their associated types. Takes a MongoClient, a database name,
@@ -276,7 +276,9 @@ def probe_mongo_schema(mongoclient, database, collection):
         and convert to dot format.
         '''
         for key in json:
-            if isinstance(json[key], dict):
+            if key in omits:
+                fields[prefix+key].add(type(json[key]).__name__)
+            elif isinstance(json[key], dict):
                 flatson(fields, json[key], prefix+key+".")
             else:
                 fields[prefix+key].add(type(json[key]).__name__)
