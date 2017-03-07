@@ -289,3 +289,43 @@ def probe_mongo_schema(mongoclient, database, collection, omits=None):
     for item in cursor:
         flatson(fields, item)
     return dict(fields)
+
+
+def query_vertica_to_tsvx(
+        cursor,
+        query,
+        tsvx_writer):
+    '''
+    Run a query in Vertica. Output it to a TSVx file. Takes
+    a cursor, a SQL query, and a TSVx writer.
+    '''
+    # Run the query
+    cursor.execute(query)
+
+    # Inspect the first element to figure out the headers
+    first, rest = tsvx.helpers.peek(cursor.iterate())
+    python_types = []
+    headers = []
+    variables = []
+    for key in first:
+        t = type(first[key])
+        # Typically, vertica_python uses future.types.newstr.newstr
+        # We'd prefer 'unicode'
+        if isinstance(first[key], basestring):
+            t = str
+        python_types.append(t)
+        headers.append(key)
+        variables.append(tsvx.helpers.variable_from_string(key))
+
+    # Write the headers
+    tsvx_writer.python_types(python_types)
+    tsvx_writer.headers(headers)
+    tsvx_writer.variables(variables)
+    tsvx_writer.write_headers()
+
+    # Dump the data
+    for line in rest:
+        items = [line[key] for key in line]
+        tsvx_writer.write(*items)
+
+    tsvx_writer.close()

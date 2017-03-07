@@ -5,7 +5,7 @@ has two modes of operation:
 
 * Line-by-line (thanks, Uber library!), so slower than necessary, but
   gets the job done, eventually.
-* Bulk transfers. No promises on escaping strings correctly (thanks, 
+* Bulk transfers. No promises on escaping strings correctly (thanks,
   HP!)
 
 Usage:
@@ -30,6 +30,7 @@ import tsvx
 import vertica_python
 
 arguments = docopt.docopt(__doc__)
+
 
 def argument(x):
     if "--"+x in arguments and arguments["--"+x]:
@@ -61,10 +62,12 @@ table_types = {
 fp = gzip.open(arguments['--file'])
 input_tsvx = tsvx.reader(fp)
 vsql_types = [table_types[t] for t in input_tsvx.types()]
-fields = ",\n    ".join(["{name} {type}".format(name=name, type=vsql_type) for (name, vsql_type) in zip(input_tsvx.variables(), vsql_types)])
+fields = ",\n    ".join(["{name} {type}".format(name=name, type=vsql_type)
+                         for (name, vsql_type)
+                         in zip(input_tsvx.variables(), vsql_types)])
 create_command = "CREATE TABLE {table_name} ({fields});".format(
-    table_name = arguments["--table"],
-    fields = fields
+    table_name=arguments["--table"],
+    fields=fields
 )
 
 if arguments['--drop']:
@@ -73,6 +76,7 @@ if arguments['--create']:
     cur.execute(create_command)
 
 columns = ",".join(input_tsvx.variables())
+
 
 def format(x):
     if isinstance(x, int) or isinstance(x, float):
@@ -87,12 +91,12 @@ def format(x):
 if False:
     for line in input_tsvx:
         cur.execute("insert into {table} values ({values});".format(
-            table = arguments["--table"],
-            values = ",".join([format(x) for x in line])
+            table=arguments["--table"],
+            values=",".join([format(x) for x in line])
         ))
     connection.commit()
 
 # CSV-style insert. Fast, but not well-vetted
 if True:
     cur.copy("COPY {table} FROM stdin DELIMITER E'\t' NULL 'None';".format(
-        table = arguments["--table"]), fp)
+        tablex=arguments["--table"]), fp)

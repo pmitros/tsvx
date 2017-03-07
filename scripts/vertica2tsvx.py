@@ -8,6 +8,8 @@ Usage:
                   [--password=password] [--database=database]
                   [--prefix=prefix]
                   [--drop] [--create]
+                  [--title=title]
+                  [--description=description]
 
 One must specify either host, user, port, database, and password, or
 prefix. If prefix is specified, said information will be taken
@@ -25,7 +27,10 @@ import vertica_python
 
 import tsvx.helpers
 
+import helpers
+
 arguments = docopt.docopt(__doc__)
+
 
 def argument(x):
     if "--"+x in arguments and arguments["--"+x]:
@@ -45,36 +50,28 @@ connection = vertica_python.connect(
 )
 
 cur = connection.cursor('dict')
-cur.execute(arguments['--query'])
-first, rest = tsvx.helpers.peek(cur.iterate())
 
-python_types = []
-headers = []
-variables = []
-for key in first:
-    t = type(first[key])
-    # Typically, vertica_python uses future.types.newstr.newstr
-    # We'd prefer 'unicode'
-    if isinstance(first[key], basestring):
-        t = str
-    python_types.append(t)
-    headers.append(key)
-    variables.append(tsvx.helpers.variable_from_string(key))
-
-filename  = arguments['--file']
+filename = arguments['--file']
 if filename.lower().endswith(".gz"):
     fp = gzip.open(filename, "w")
 else:
     fp = open(filename, "w")
-w = tsvx.writer(fp)
+tsvx_writer = tsvx.writer(fp)
 
-w.python_types(python_types)
-w.headers(headers)
-w.variables(variables)
-w.write_headers()
+if arguments["--title"]:
+    tsvx_writer.title(arguments["--title"])
+else:
+    tsvx_writer.title("Vertica query export")
 
-for line in rest:
-    items = [line[key] for key in line]
-    w.write(*items)
+if arguments["--description"]:
+    tsvx_writer.description(arguments["--description"])
+else:
+    tsvx_writer.description("Vertica query export: {query}".format(
+        query=arguments['--query']
+    ))
 
-w.close()
+helpers.query_vertica_to_tsvx(
+    cur,
+    arguments['--query'],
+    tsvx_writer
+)
