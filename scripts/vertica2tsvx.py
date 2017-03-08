@@ -7,7 +7,6 @@ Usage:
                   [--host=host] [--user=user] [--port=port]
                   [--password=password] [--database=database]
                   [--prefix=prefix]
-                  [--drop] [--create]
                   [--title=title]
                   [--description=description]
 

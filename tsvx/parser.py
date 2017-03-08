@@ -26,11 +26,13 @@ def _encodebool(boolean):
     >>> _encodebool(False)
     'false'
     '''
+    if boolean is None:
+        return '"null"'
     if not isinstance(boolean, bool):
         raise TypeError("Trying to encode " +
                         repr(boolean) +
                         " of type " +
-                        type(boolean) +
+                        repr(type(boolean)) +
                         "as a boolean")
 
     if boolean:
@@ -176,6 +178,8 @@ def _is_random_date_string(datestring):
 TYPE_MAP = [
     ["int", "Number", int, str,
      ["^-?[0-9]+$"]],
+    ["Decimal", "Number", int, str,
+     []],
     ["NoneType", "null", lambda x: None, lambda x: "null", ["None", "null"]],
     ["float", "Number", float, str,
      ["^-?[0-9]+\.[0-9]*$", "^-?[0-9]+\.[0-9]*e-?[0-9]+$"]],
@@ -184,8 +188,10 @@ TYPE_MAP = [
     ["ISO8601-datetime", "String", _parsedatetime, _encodedatetime,
      ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]T"
       "[0-9][0-9]:[0-9][0-9]:[0-9][0-9]\.?[0-9]*$"]],
+    ["datetime", "String", _parsedatetime, _encodedatetime, []],
     ["ISO8601-date", "String", _parsedate, _encodedate,
      ["^[0-9][0-9][0-9][0-9]-[0-9][0-9]?-[0-9][0-9]$"]],
+    ["date", "String", _parsedate, _encodedate, []],
     ["unformatted-datetime", "String", _parseunknowndate, _encodedatetime,
      [_is_random_date_string]],
     ["str", "String", _parsestr, _encodestr, [".*"]]
