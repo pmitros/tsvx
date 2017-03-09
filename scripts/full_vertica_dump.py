@@ -40,7 +40,8 @@ connection = vertica_python.connect(
     port=int(argument('port')),
     user=argument('user'),
     password=argument('password'),
-    database=argument('database')
+    database=argument('database'),
+    unicode_error='replace'
 )
 
 cur = connection.cursor('dict')
@@ -50,7 +51,7 @@ for item in list(cur.iterate()):
         schema_name=item['schema_name'],
         table_name=item['table_name']
     )
-    title = item['remarks']
+    title = str(item['remarks'])
     if title is None:
         title = "Vertica dump"
     description = "Vertica dump from query: " + query
@@ -77,12 +78,12 @@ for item in list(cur.iterate()):
             tsvx_writer
         )
     except vertica_python.errors.PermissionDenied:
-        tsvx_writer.close()
-        os.unlink(pathname)
+        fp.write("Permission denied")
+        fp.close()
         print "Permission denied on "+pathname
     except StopIteration:
-        tsvx_writer.close()
-        os.unlink(pathname)
+        fp.write("Empty table")
+        fp.close()
         print "Empty Table "+pathname
     except:
         tsvx_writer.close()
