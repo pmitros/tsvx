@@ -121,6 +121,8 @@ class TSVxReader(TSVxReaderWriter):
     def __iter__(self):
         return (TSVxLine(x, self) for x in self.generator)
 
+    def title(self):
+        return self.metadata['title']
 
 class TSVxWriter(TSVxReaderWriter):
     def __init__(self, destination):

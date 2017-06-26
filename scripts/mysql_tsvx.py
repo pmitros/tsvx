@@ -56,6 +56,11 @@ if os.path.exists(filename) and not arguments["--overwrite"]:
     print "File %s exists" % (filename)
     sys.exit(-1)
 
+if arguments["--seq-id-partition"] and not arguments["--max-step"]:
+    print "Invalid arguments. --seq-id-partition requires a --max-step for the partitioning"
+    print "Try adding --max-step=100000"
+    sys.exit(1)
+
 helpers.scrape_mysql_table_to_tsvx(
     filename, cursor, arguments["--database"], arguments["--table"],
     arguments["--row-limit"], arguments["--max-step"],

@@ -1,10 +1,10 @@
 '''Dump a MySQL database to a directory of TSVx files
 
 Usage:
-  mysql_tsvx.py --host=host --user=user --port=port
-                --password=password --database=database
-                [--output=directory]
-                [--max-step=maximum-step] [--row-limit=row-limit]
+  mysql_fulldb.py --host=host --user=user --port=port
+                  --password=password --database=database
+                  [--output=directory]
+                  [--max-step=maximum-step] [--row-limit=row-limit]
 '''
 
 import MySQLdb

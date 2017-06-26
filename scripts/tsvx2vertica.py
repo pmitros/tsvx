@@ -74,6 +74,10 @@ if arguments['--drop']:
     cur.execute("DROP TABLE {table};".format(table=arguments["--table"]))
 if arguments['--create']:
     cur.execute(create_command)
+    cur.execute("comment on table {table_name} is '{title}'".format(
+        table_name=arguments["--table"],
+        title=input_tsvx.title().replace("'", '"').replace('\n', ' ')
+    ))
 
 columns = ",".join(input_tsvx.variables())
 
@@ -98,5 +102,5 @@ if False:
 
 # CSV-style insert. Fast, but not well-vetted
 if True:
-    cur.copy("COPY {table} FROM stdin DELIMITER E'\t' NULL 'None';".format(
-        tablex=arguments["--table"]), fp)
+    cur.copy("COPY {table} FROM stdin DELIMITER E'\t' NULL 'null';".format(
+        table=arguments["--table"]), fp)

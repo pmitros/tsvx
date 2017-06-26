@@ -3,10 +3,13 @@ import click
 import collections
 import gzip
 import numbers
+import os
+import time
+
 import tsvx
 
 mysql_escape = None
-
+connect_args = None  # For reconnecting, if we need to
 
 def mysql_connect(arguments):
     '''
@@ -14,6 +17,8 @@ def mysql_connect(arguments):
     cursor object
     '''
     global mysql_escape
+    global connect_args
+    connect_args = arguments
     db = MySQLdb.connect(host=arguments["--host"],
                          port=int(arguments["--port"]),
                          user=arguments["--user"],
@@ -22,6 +27,10 @@ def mysql_connect(arguments):
     mysql_escape = db.escape_string
     c = db.cursor()
     return c
+
+
+def reconnect():
+    return mysql_connect(connect_args)
 
 
 def scrape_mysql_table_to_tsvx(filename, cursor, database, table,
@@ -219,7 +228,7 @@ def grab_table_data(cursor, writer, table, id_range):
     print "Grabbing data for "+table
     ranges = zip(id_range[:-1], id_range[1:])
     pri_key = primary_key(writer)
-    with click.progressbar(ranges) as steps:
+    with click.progressbar(ranges, show_pos = True, item_show_func = lambda x:str(x), show_percent = True) as steps:
         for min_id, max_id in steps:
             sql_command = "select * from {table} where " \
                           '`{pri}` >= {min_id} and `{pri}` < {max_id};'.format(
@@ -228,7 +237,19 @@ def grab_table_data(cursor, writer, table, id_range):
                               min_id=min_id,
                               max_id=max_id
                           )
-            cursor.execute(sql_command)
+            try:
+                cursor.execute(sql_command)
+            except:
+                time.sleep(5)
+                os.system("echo Change this line to have a command which fixes the problem ")
+                time.sleep(5)
+                try:
+                    cursor = reconnect()
+                    cursor.execute(sql_command)
+                except:
+                    raw_input("Confirm connection")
+                    cursor = reconnect()
+                    cursor.execute(sql_command)
             for row in cursor:
                 writer.write(*row)
     writer.close()
@@ -252,7 +273,9 @@ def mysql_to_python_type(type_string):
         "double": float,
         "char": str,
         "date": "ISO8601-date",
-        "datetime": "ISO8601-datetime"
+        "datetime": "ISO8601-datetime",
+        "timestamp": "ISO8601-datetime",
+        "float": float
     }
     for t in sorted(mysql_type_map, key=lambda x: -len(x)):
         if type_string.startswith(t):
