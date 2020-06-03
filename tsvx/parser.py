@@ -12,10 +12,12 @@ conversion.
 '''
 
 import datetime
-import dateutil.parser
-import exceptions
 import json
 import re
+
+import dateutil.parser
+
+from tsvx import exceptions
 
 
 def _encodebool(boolean):
@@ -52,7 +54,7 @@ def _encodestr(string):
     if string is None:
         # TODO: Find a better encoding?
         return '"null"'
-    if not isinstance(string, basestring):
+    if not isinstance(string, str):
         raise TypeError("Trying to encode " +
                         repr(string) +
                         " of type " +
@@ -71,9 +73,9 @@ def _parsestr(string):
     Escape a string with standard JSON encoding, omitting
     the quotes
     >>> _parsestr("Hello")
-    u'Hello'
+    'Hello'
     >>> _parsestr("Hello\\t")
-    u'Hello\t'
+    'Hello\t'
     '''
     return json.loads('"'+string+'"')
 
@@ -162,6 +164,7 @@ def _is_random_date_string(datestring):
     except ValueError:
         return False
 
+
 # Elements:
 #
 # * Python type name
@@ -210,7 +213,7 @@ def guess_type(string):
     '''
     for python_type_string, json_type, parser, encoder, regexps in TYPE_MAP:
         for regexp in regexps:
-            if isinstance(regexp, basestring):
+            if isinstance(regexp, str):
                 if re.compile(regexp).match(string):
                     return (python_type_string, json_type)
             elif regexp(string):
@@ -229,10 +232,12 @@ def parse(string, python_type):
     datetime.date(2014, 5, 6)
     '''
     for python_type_string, json_type, parser, encoder, regexp in TYPE_MAP:
-        if python_type_string == python_type:
+        if isinstance(python_type, str) and python_type_string == python_type:
+            return parser(string)
+        if isinstance(python_type, type) and python_type_string == python_type.__name__:
             return parser(string)
     raise exceptions.TSVxFileFormatException(
-        "Unknown type TSVx parsing " + python_type
+        "Unknown type TSVx parsing: " + repr(python_type)
     )
 
 
@@ -249,9 +254,12 @@ def encode(string, python_type):
     for python_type_string, json_type, parser, encoder, regexp in TYPE_MAP:
         if python_type_string == python_type:
             return encoder(string)
+        if isinstance(python_type, type) and python_type_string == python_type.__name__:
+            return encoder(string)
     raise exceptions.TSVxFileFormatException(
-        "Unknown type TSVx encoding " + python_type
+        "Unknown type TSVx encoding: " + repr(python_type)
     )
+
 
 if __name__ == "__main__":
     import doctest

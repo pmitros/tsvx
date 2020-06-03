@@ -1,9 +1,9 @@
 '''
 Simple generic utility functions not specific to TSVx
 '''
+import itertools
 
 import dateutil.parser
-import itertools
 
 
 def valid_variable(string):
@@ -41,13 +41,13 @@ def peek(generator, item_count=-1):
     [0, 1, 2, 3, 4]
     '''
     if item_count == -1:
-        first = generator.next()
+        first = next(generator)
         generator = itertools.chain([first], generator)
         return (first, generator)
-    else:
-        items = [generator.next() for x in range(item_count)]
-        generator = itertools.chain(items, generator)
-        return (items, generator)
+    # Else, if item_count != -1
+    items = [next(generator) for x in range(item_count)]
+    generator = itertools.chain(items, generator)
+    return (items, generator)
 
 
 def read_to_dash(generator):
@@ -62,7 +62,7 @@ def read_to_dash(generator):
     return "\n".join(lines)
 
 
-existing_variables = set()
+EXISTING_VARIABLES = set()
 
 
 def variable_from_string(header):
@@ -79,6 +79,8 @@ def variable_from_string(header):
     >>> variable_from_string("valid_identifier")
     'valid_identifier'
 
+    Should we do this globally? Once per writer? Should we maintain a
+    dictionary of mappings?
     '''
     # Make sure variable is numbers, letters, and underscores, and
     # does not begin with a number
@@ -87,34 +89,34 @@ def variable_from_string(header):
     if candidate[0].isdigit():
         candidate = '_' + candidate
     # Make sure variable is unique
-    if candidate in existing_variables:
+    if candidate in EXISTING_VARIABLES:
         i = 0
-        while candidate+str(i) in existing_variables:
+        while candidate+str(i) in EXISTING_VARIABLES:
             i = i+1
         candidate = candidate+str(i)
-    existing_variables.add(candidate)
+    EXISTING_VARIABLES.add(candidate)
     return candidate
 
 
-def datetime_to_ISO8601(d):
+def datetime_to_ISO8601(datetime_string):
     '''
     Transform a freeform datetime to ISO8601 format
     >>> datetime_to_ISO8601("10/28/2014 00:00:00")
     '2014-10-28T00:00:00'
     '''
-    return dateutil.parser.parse(d).isoformat()
+    return dateutil.parser.parse(datetime_string).isoformat()
 
 
-def date_to_ISO8601(d):
+def date_to_ISO8601(date_string):
     '''
     Transform a freeform date to ISO8601 format
     >>> date_to_ISO8601("10/28/2014")
     '2014-10-28'
     '''
-    return datetime_to_ISO8601(d).split('T')[0]
+    return datetime_to_ISO8601(date_string).split('T')[0]
 
 
-def to_bool(b):
+def to_bool(boolean_string):
     '''
     Transform flexible types to a boolean
     >>> to_bool(True)
@@ -126,14 +128,39 @@ def to_bool(b):
     >>> to_bool("NO")
     False
     '''
-    if b in [True, False]:
-        return b
-    if isinstance(b, basestring):
-        if b.lower() in ["yes", "y", "true", "t"]:
+    if boolean_string in [True, False]:
+        return boolean_string
+    if isinstance(boolean_string, str):
+        if boolean_string.lower() in ["yes", "y", "true", "t"]:
             return True
-        elif b.lower() in ["no", "n", "false", "f"]:
+        if boolean_string.lower() in ["no", "n", "false", "f"]:
             return False
-    raise AttributeError("Not a boolean-looking type: "+str(b))
+    raise AttributeError("Not a boolean-looking type: "+str(boolean_string))
+
+
+def to_python_type(type_info):
+    '''
+    Normalizes either a Python `type` object or a Python `str` object to be
+    a Python type. We can use this to map headers back to type lists.
+
+    >>> to_python_type('ISO-8851')  # Non-Python type string. Unchanged.
+    'ISO-8851'
+    >>> to_python_type('str')       # Python type string ==> Python type
+    <class 'str'>
+    >>> to_python_type(str)         # Python type. Unchanged.
+    <class 'str'>
+    '''
+    python_types = [ int, float, str, bool ]
+    python_type_names = [object.__name__ for object in python_types]
+
+    if isinstance(type_info, type):
+        return type_info  # Python type
+    if isinstance(type_info, str):
+        if type_info in python_type_names:  # String correspond to Python type
+            return python_types[python_type_names.index(type_info)]
+        return type_info  # String for non-Python type
+    raise AttributeError("Expected str or type object: " + repr(type_info))
+
 
 
 if __name__ == "__main__":

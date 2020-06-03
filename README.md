@@ -199,6 +199,28 @@ shows how the prototype reference library works. Note that both the
 API and file format are still mutable -- we are actively soliciting
 feedback.
 
+Library
+=======
+
+This library is not in any sort of stable shape. Indeed, it's more
+there to explore what the APIs ought to be, and how it ought to be
+structured.
+
+Please feel free to comment, criticise, make pull requests, etc.
+
+We also don't make claims to being too performant. The goal is to be
+programmer-friendly in this iteration. We might get to performance
+later.
+
+The library is structured for use as an internal data exchange
+format. We'd want to provide a "safe" mode before accepting external
+TSVx files from untrusted sources. Likely, this just consists of
+getting rid of access through `line.attribute` and only using
+`line['attribute']`
+
+We did just step up to Python 3! Older commits do Python 2. We haven't
+tested the newer version with 2 (but it probably doesn't work).
+
 A More Complex File
 ====================
 

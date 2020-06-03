@@ -5,4 +5,4 @@ TSV files with regards to headers, metadata, and escaping, while
 maintaining their human-readability and ease of processing.
 '''
 
-from tsvx import reader, writer
+from .tsvx import reader, writer

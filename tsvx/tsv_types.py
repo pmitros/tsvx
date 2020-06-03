@@ -6,18 +6,22 @@ import datetime
 import sys
 import yaml
 
-import helpers
-import parser
-import exceptions
+from . import helpers
+from . import parser
+from . import exceptions
 
 
-class TSVxLine(object):
+class TSVxLine:
     '''
     Represents a single line in the reader object. Lets you work
     with the attributes as a dict-like object, a list-like object,
     or as attributes.
 
-    That might be overkill, but we'd like to see what's most useful.
+    If the first column has header `id`, all of these are okay:
+    `line[0]`, `line.id`, `line['id']`
+
+    We should offer a sanitized / safe version which disables
+    `line.id`
     '''
     def __init__(self, line_string, parent):
         '''
@@ -27,72 +31,156 @@ class TSVxLine(object):
         split_line = line_string[:-1].split('\t')
         self.line = list()
         try:
-            for item, item_type in zip(split_line, parent.types()):
+            for item, item_type in zip(split_line, parent.types):
                 self.line.append(parser.parse(item, item_type))
         except:
-            print "Error parsing", line_string
+            print("Error parsing", line_string)
             raise
 
         self.parent = parent
 
     def __repr__(self):
+        '''
+        The `repr` of the line is a combination of the `repr`s of
+        the objects there-in.
+        '''
         return "/".join(repr(item) for item in self.line)
 
     def __str__(self):
+        '''
+        The `str` of the line is a combination of the `str`s of
+        the objects there-in.
+        '''
         return "/".join(str(item) for item in self.line)
 
-    def __unicode__(self):
-        return "/".join(unicode(item) for item in self.line)
+# Not needed in Python 3?
+#    def __unicode__(self):
+#        return "/".join(str(item) for item in self.line)
 
     def __getattr__(self, attr):
+        '''
+        We can retrieve items in a line with dot notation.
+
+        Note that this can introduce security issues for untrusted
+        content. We should provide safe / unsafe modes in the library.
+        TSVX is mostly used internally, where this is okay, but for
+        external data sources, we would want to omit this.
+        '''
         if not helpers.valid_variable(attr):
             raise exceptions.TSVxFileFormatException(
                 "TSVx variables must be alphanumeric. " + attr
             )
-            if attr.beginswith('_'):
-                raise exceptions.TSVxSuscpiciousOperation(
-                    "Strange attribute " + attr +
-                    ". Use get instead of attribute referencing")
+        if attr.beginswith('_'):
+            raise exceptions.TSVxSuscpiciousOperation(
+                "Strange attribute " + attr +
+                ". Use get instead of attribute referencing")
         index = self.parent.variable_index(attr)
         return self.line[index]
 
     def __getitem__(self, attr):
-        if isinstance(attr, basestring):
+        '''
+        We can reference by []. Passing an `int` will get the nth item in
+        a line, while a `str` will get an item by name.
+        '''
+        if isinstance(attr, str):
             if not helpers.valid_variable(attr):
                 raise exceptions.TSVxFileFormatException(
                     "TSVx variables must be alphanumeric. " + attr
                 )
             index = self.parent.variable_index(attr)
             return self.line[index]
-        elif isinstance(attr, int):
+        if isinstance(attr, int):
             return self.line[attr]
+        raise AttributeError("Can't index with {repr} of type {type}".format(
+            repr=repr(attr),
+            type=type(attr)
+        ))
 
     def __len__(self):
+        '''
+        Number of items in the line
+        '''
         return len(self.line)
 
     def __iter__(self):
-        for item in self.line:
+        '''
+        As with a dictionary, we can step through the keys.
+
+        TODO: Should we return keys? Values? Or both?
+        '''
+        for item in self.parent.header['variables']:
             yield item
 
     def values(self):
+        '''
+        List of values in the line.
+        '''
         return self.line
 
     def keys(self):
-        return self.parent._line_header['variables']
+        '''
+        Return the column names.
+        '''
+        return self.parent.header['variables']
 
 
-class TSVxReaderWriter(object):
+class TSVxReaderWriter():
+    '''
+    Upper-level class for managing TSV-related metadata.
+    '''
+    def __init__(self):
+        '''
+        This is mostly for readability and to avoid pylint errors. This is
+        initialized in subclasses.
+        '''
+        self._metadata = dict()
+        self.header = dict()
+
     def __repr__(self):
-        return yaml.dump(self.metadata)+"/"+str(self._line_header)
+        '''
+        For now, we join the YAML representation with the line header. This
+        may be too verbose, so we'll probably cut back to just the title
+        and maybe line header.
+        '''
+        return yaml.dump(self._metadata)+"/"+str(self.header)
 
     def variable_index(self, variable):
-        if 'variables' not in self._line_header:
+        '''
+        For a column name (encoded as a variable), return the column number
+        '''
+        if 'variables' not in self.header:
             raise exceptions.TSVxFileFormatException(
                 "No defined variable names: " + variable)
-        if variable not in self._line_header['variables']:
+        if variable not in self.header['variables']:
             raise exceptions.TSVxFileFormatException(
                 "Variable undefined: " + variable)
-        return self._line_header['variables'].index(variable)
+        return self.header['variables'].index(variable)
+
+    @property
+    def title(self):
+        '''
+        Typically the first line of the YAML, summarizing what the file is.
+        '''
+        return self._metadata['title']
+
+    @title.setter
+    def title(self, title):
+        self._metadata['title'] = title
+
+    @property
+    def description(self):
+        '''
+        Typically, a longer multi-line description of the file.
+        '''
+        return self._metadata['description']
+
+    @description.setter
+    def description(self, description):
+        self._metadata['description'] = description
+
+    @property
+    def metadata(self):
+        return self._metadata
 
 
 class TSVxReader(TSVxReaderWriter):
@@ -102,99 +190,146 @@ class TSVxReader(TSVxReaderWriter):
                  line_header,
                  generator):
         '''
-        Create a new TS
+        Create a new TSVx Reader. This shouldn't be called directly. We
+        would generally use `tsvx.reader(file_pointer)`. 
         '''
-        self._headers = column_names
-        self.metadata = metadata
-        self._line_header = line_header
+        super().__init__()
+        self._column_names = column_names
+        self._metadata = metadata
+        self.extra_header = line_header
         self.generator = generator
 
+    @property
     def types(self):
-        return self._line_header['types']
+        '''
+        Python / string-style type names for each column
+        '''
+        return list(map(helpers.to_python_type, self.extra_header['types']))
 
-    def headers(self):
-        return self._headers
+    @property
+    def column_names(self):
+        '''
+        Names of each column, as per original TSVx
+        '''
+        return self._column_names
 
+    @property
     def variables(self):
-        return self._line_header['variables']
+        '''
+        Python-friendly variable names for each header
+        '''
+        return self.extra_header['variables']
 
     def __iter__(self):
+        '''
+        This is the basic way of stepping through a TSV: We iterate
+        through the rows in the TSVx file. 
+        '''
         return (TSVxLine(x, self) for x in self.generator)
 
-    def title(self):
-        return self.metadata['title']
 
 class TSVxWriter(TSVxReaderWriter):
+    '''
+    Class to stream TSVs to a file.
+    '''
     def __init__(self, destination):
+        '''
+        We pass a file-pointer-like-object to create a writer. We then
+        configure it by setting `headers`, etc.
+
+        This shouldn't be called directly. We would generally use
+        `tsvx.writer(file_pointer)`.
+        '''
+        super().__init__()
         self.destination = destination
-        self.metadata = {
+        self._metadata = {
             "created-date": datetime.datetime.utcnow().isoformat(),
             "generator": sys.argv[0]
         }
-        self._line_header = dict()
+        self._headers = {}
         self._variables = None
+        self.written = False
+        self._types = []
 
+    @property
+    def headers(self):
+        return self._headers
+
+    @headers.setter
     def headers(self, headers=None):
-        if headers:
-            self._headers = headers
-        else:
-            return self._headers
+        self._headers = headers
+        return headers
 
+    @property
+    def variables(self):
+        return self._variables
+
+    @variables.setter
     def variables(self, variables):
         self._variables = variables
+        return variables
 
     def line_header(self, headername, values=None):
-        if values:
-            self._line_header[headername] = values
-        else:
-            return self._line_header[headername]
-
-    def python_types(self, types):
         '''
-        Takes a list of Python types, or strings. A Python type
+        Get or set line header
+        '''
+        if values:
+            self.header[headername] = values
+        return self.header[headername]
+
+    @property
+    def types(self):
+        return self._types
+
+    @types.setter
+    def types(self, types):
+        '''
+        Takes a list of Python `type`s, or `str`'s. A Python type
         might be int, float, or similar. A string might be
         "ISO8601-date."
-
-        Populates the type information based on this.
         '''
-        self._types = list()
-        for t in types:
-            if isinstance(t, basestring):
-                self._types.append(t)
+        self._types = []
+        for python_type in types:
+            if isinstance(python_type, str):
+                self._types.append(python_type)  # e.g. `ISO8601-date`
             else:
-                self._types.append(t.__name__)
-
-    def title(self, title):
-        self.metadata['title'] = title
-
-    def description(self, description):
-        self.metadata['description'] = description
+                self._types.append(python_type.__name__)  # e.g. `int`
 
     def add_metadata(self, key, value):
-        self.metadata[key] = value
+        '''
+        Add an arbitrary key-value pair to the header
+        '''
+        self._metadata[key] = value
 
     def get_metadata(self, key):
-        return self.metadata[key]
+        '''
+        Read an arbitrary key-value pair from the header
+        '''
+        return self._metadata[key]
 
     def write_headers(self):
+        '''
+        When we've finished populating the headers, write them out with
+        this call.
+        '''
         if not self._variables:
             self._variables = [
                 helpers.variable_from_string(header)
                 for header
                 in self._headers]
 
-        if self.metadata:
-            metadata = yaml.dump(self.metadata, default_flow_style=False)
+        if self._metadata:
+            metadata = yaml.dump(self._metadata, default_flow_style=False)
             self.destination.write(metadata)
             self.destination.write("-"*10 + "\n")
         self.destination.write("\t".join(self._headers) + "\n")
-        self.destination.write("\t".join([x for x in self._types]) +
+        self.destination.write("\t".join(self._types) +
                                "\t(types)\n")
-        self.destination.write("\t".join([x for x in self._variables]) +
+        self.destination.write("\t".join(self._variables) +
                                "\t(variables)\n")
-        for key in sorted(self._line_header):
-            values = self._line_header[key]
-            self.destination.write("\t".join([x for x in values]) +
+        for key in sorted(self.header):
+            values = self.header[key]
+            self.destination.write("\t".join(values) +
                                    "\t("+key+")\n")
 
         self.destination.write("-"*10 + "\n")
@@ -224,7 +359,6 @@ class TSVxWriter(TSVxReaderWriter):
 
     def close(self):
         '''
-        Convenience function so we don't need to keep file pointers
-        around. This closes the stream associated with the writer.
+        This closes the stream associated with the writer.
         '''
         self.destination.close()

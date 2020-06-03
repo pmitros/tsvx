@@ -7,14 +7,12 @@ class TSVxException(Exception):
     '''
     Generic exception all others derive from
     '''
-    pass
 
 
 class TSVxFileFormatException(TSVxException):
     '''
     Generic exception for ill-formed TSVx file
     '''
-    pass
 
 
 class TSVxSuscpiciousOperation(TSVxException):
@@ -27,4 +25,3 @@ class TSVxSuscpiciousOperation(TSVxException):
     using `getattr` and `hasattr` would be a bad idea.
     line.get('__init__') would be okay.
     '''
-    pass
