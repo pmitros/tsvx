@@ -70,7 +70,7 @@ class TSVxLine:
             raise exceptions.TSVxFileFormatException(
                 "TSVx variables must be alphanumeric. " + attr
             )
-        if attr.beginswith('_'):
+        if attr.startswith('_'):
             raise exceptions.TSVxSuscpiciousOperation(
                 "Strange attribute " + attr +
                 ". Use get instead of attribute referencing")
