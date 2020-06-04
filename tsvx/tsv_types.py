@@ -134,7 +134,7 @@ class TSVxReaderWriter():
         initialized in subclasses.
         '''
         self._metadata = dict()
-        self.header = dict()
+        self.extra_headers = dict()
 
     def __repr__(self):
         '''
@@ -142,19 +142,20 @@ class TSVxReaderWriter():
         may be too verbose, so we'll probably cut back to just the title
         and maybe line header.
         '''
-        return yaml.dump(self._metadata)+"/"+str(self.header)
+        return yaml.dump(self._metadata)+"/"+str(self.extra_headers)
 
     def variable_index(self, variable):
         '''
         For a column name (encoded as a variable), return the column number
         '''
-        if 'variables' not in self.header:
+        if 'variables' not in self.extra_headers:
             raise exceptions.TSVxFileFormatException(
-                "No defined variable names: " + variable)
-        if variable not in self.header['variables']:
+                "No defined variable names: " + variable + ". Defined: \n" + \
+                "".join(self.extra_headers))
+        if variable not in self.extra_headers['variables']:
             raise exceptions.TSVxFileFormatException(
                 "Variable undefined: " + variable)
-        return self.header['variables'].index(variable)
+        return self.extra_headers['variables'].index(variable)
 
     @property
     def title(self):
@@ -196,7 +197,7 @@ class TSVxReader(TSVxReaderWriter):
         super().__init__()
         self._column_names = column_names
         self._metadata = metadata
-        self.extra_header = line_header
+        self.extra_headers = line_header
         self.generator = generator
 
     @property
@@ -204,7 +205,7 @@ class TSVxReader(TSVxReaderWriter):
         '''
         Python / string-style type names for each column
         '''
-        return list(map(helpers.to_python_type, self.extra_header['types']))
+        return list(map(helpers.to_python_type, self.extra_headers['types']))
 
     @property
     def column_names(self):
@@ -218,7 +219,7 @@ class TSVxReader(TSVxReaderWriter):
         '''
         Python-friendly variable names for each header
         '''
-        return self.extra_header['variables']
+        return self.extra_headers['variables']
 
     def __iter__(self):
         '''
@@ -274,8 +275,8 @@ class TSVxWriter(TSVxReaderWriter):
         Get or set line header
         '''
         if values:
-            self.header[headername] = values
-        return self.header[headername]
+            self.extra_headers[headername] = values
+        return self.extra_headers[headername]
 
     @property
     def types(self):
@@ -327,8 +328,8 @@ class TSVxWriter(TSVxReaderWriter):
                                "\t(types)\n")
         self.destination.write("\t".join(self._variables) +
                                "\t(variables)\n")
-        for key in sorted(self.header):
-            values = self.header[key]
+        for key in sorted(self.extra_headers):
+            values = self.extra_headers[key]
             self.destination.write("\t".join(values) +
                                    "\t("+key+")\n")
 
