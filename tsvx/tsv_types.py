@@ -228,6 +228,16 @@ class TSVxReader(TSVxReaderWriter):
         '''
         return (TSVxLine(x, self) for x in self.generator)
 
+    def close(self):
+        '''
+        This is dumb. We should figure out how not to be dumb later, but
+        for now, this works. It will duck-type close files, but not close
+        things like lists.
+
+        I think we want something like `with`
+        '''
+        if '__close__' in self.generator.__dir__():
+            self.generator.close()
 
 class TSVxWriter(TSVxReaderWriter):
     '''
